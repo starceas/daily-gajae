@@ -92,8 +92,12 @@ def main():
     rows = "".join(
         f'<a href="posts/{d}.html"><span class="d">{d}</span>{html.escape(t)}</a>' for d, t in entries
     )
+    course = (
+        '<p class=meta><a href="course/index.html">AI 엔지니어링 학습 과정 →</a></p>'
+        if (ROOT / "course" / "index.html").exists() else ""
+    )
     (ROOT / "index.html").write_text(
-        page(SITE_TITLE, f"<h1>{SITE_TITLE}</h1><p class=meta>{SITE_DESC}</p><div class=list>{rows}</div>"),
+        page(SITE_TITLE, f"<h1>{SITE_TITLE}</h1><p class=meta>{SITE_DESC}</p>{course}<div class=list>{rows}</div>"),
         encoding="utf-8",
     )
     print(f"built {len(entries)} posts")

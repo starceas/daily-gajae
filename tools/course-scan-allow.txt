@@ -1,0 +1,4 @@
+selfcheck.py:50: 차단어
+selfcheck.py:708: 절대 경로
+02-principles.html:99: 주소
+02-principles.md:119: 주소
