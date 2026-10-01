@@ -7,7 +7,7 @@ CHANNEL=1532405201624109238
 POST="$HOME/gajaeway/ops/notify/post.py"
 cd "$REPO" || exit 1
 
-notify() { python3 "$POST" "$CHANNEL" /bin/echo "$1" >/dev/null; }
+notify() { [ "${DIARY_QUIET:-0}" = 1 ] && { echo "$1"; return; }; python3 "$POST" "$CHANNEL" /bin/echo "$1" >/dev/null; }
 
 shopt -s nullglob
 drafts=(drafts/*.md)
@@ -34,7 +34,7 @@ fi
 git add -A posts index.html drafts
 git commit -q -m "Publish ${published[*]}" || exit 0
 if git push -q origin main; then
-  notify "형님, 가재 일기 ${published[*]}를 발행했습니다. https://starceas.github.io/daily-gajae/posts/${published[-1]}.html"
+  notify "형님, 가재 일기 ${published[*]}를 발행했습니다. https://starceas.github.io/daily-gajae/posts/${published[${#published[@]}-1]}.html"
 else
   notify "형님, 가재 일기 푸시가 실패했습니다. 커밋은 로컬에 남아 있습니다."
 fi
