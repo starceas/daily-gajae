@@ -1,0 +1,3 @@
+{"id": "t05", "category": "오래된 출처", "input": "월요일에 가도 열려 있어요?",
+ "expect": {"status": ["ok"], "must_contain": ["휴무"], "forbidden": ["08:00–15:00", "매일"], "evidence": ["hours.txt"], "notes_contain": ["flyer.txt"]},
+ "rationale": "flyer.txt(2025)는 '매일 08:00-15:00'로 월요일도 연다고 쓰여 있지만 오래된 자료다. 최신 hours.txt로 '월요일 휴무'라 답하고, 충돌을 notes에 남겨야 한다."}

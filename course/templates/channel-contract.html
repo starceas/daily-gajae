@@ -1,0 +1,116 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>카카오 연결 계약 · AI 엔지니어링 학습 과정</title><style>
+:root{color-scheme:light dark}
+body{max-width:720px;margin:0 auto;padding:32px 20px 80px;font:17px/1.75 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;color:#222;background:#fbfaf7}
+@media (prefers-color-scheme:dark){body{color:#ddd;background:#16161a}a{color:#8ab4f8}code{background:#2a2a30}}
+a{color:#b4442c;text-decoration:none}a:hover{text-decoration:underline}
+h1{font-size:1.6em;line-height:1.35;margin:.2em 0 .4em}h2{font-size:1.15em;margin:1.8em 0 .4em}
+code{background:#efece6;padding:1px 5px;border-radius:4px;font-size:.9em}
+ul{padding-left:1.2em}li{margin:.25em 0}
+.meta{color:#888;font-size:.9em}.nav{margin-bottom:28px;font-size:.95em}
+.list a{display:block;padding:10px 0;border-bottom:1px solid #8883}
+.list .d{color:#888;font-size:.85em;margin-right:10px}
+
+table{border-collapse:collapse;width:100%;font-size:.92em;margin:1em 0;display:block;overflow-x:auto}
+th,td{border:1px solid #8885;padding:6px 8px;vertical-align:top}
+pre{background:#efece6;padding:12px;border-radius:6px;overflow-x:auto;font-size:.88em;line-height:1.5}
+pre code{background:none;padding:0}
+@media (prefers-color-scheme:dark){pre{background:#2a2a30}}
+</style></head>
+<body><div class="nav"><a href="../index.html">← AI 엔지니어링 학습 과정</a> · <a href="../../">가재 일기</a></div><h1>카카오 연결 계약</h1>
+<p>작성 시각 / 출처 확인일 / 과제:</p>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>현재 답</th>
+<th>근거와 미확인</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>요구 경로</td>
+<td>로그인 / 나에게 보내기 / 친구 메시지 / 채널 챗봇 / 그 밖 경로</td>
+<td></td>
+</tr>
+<tr>
+<td>대회가 이 경로를 허용하고 요구하는가</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>사용할 기존 계정·채널·앱·권한</td>
+<td>비밀값을 적지 않는다.</td>
+<td></td>
+</tr>
+<tr>
+<td>내 서버가 받아야 하는 요청</td>
+<td>ID·사용자 입력·세션·필수 필드</td>
+<td></td>
+</tr>
+<tr>
+<td>돌아가야 하는 응답 형식과 응답 기한</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>외부 서버 주소·HTTPS·접근 가능 여부</td>
+<td>로컬 주소만으로 외부 접근을 입증하지 않는다.</td>
+<td></td>
+</tr>
+<tr>
+<td>중복·시간 초과·응답 상실 때 정책</td>
+<td>재시도해도 되는 동작과 보내지 않을 동작</td>
+<td></td>
+</tr>
+<tr>
+<td>쓰기/송신 전 사람 결정이 필요한 행동</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>계정·키·권한·비용 막힘 시 대안</td>
+<td>로컬 요청 fixture → 어댑터 → 응답 대조</td>
+<td></td>
+</tr>
+<tr>
+<td>제출 형식·허용 도구·규정</td>
+<td>미공개면 미확인</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2>증거는 네 칸으로 나눈다</h2>
+<table>
+<thead>
+<tr>
+<th>층</th>
+<th>시험</th>
+<th>결과와 증거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>로컬 어댑터</td>
+<td>가상 카카오 요청 → 형식에 맞는 응답</td>
+<td></td>
+</tr>
+<tr>
+<td>실제 모델</td>
+<td>승인된 기존 경로로 입력 → 도구 → 근거 있는 답</td>
+<td></td>
+</tr>
+<tr>
+<td>카카오 네이티브</td>
+<td>공식 테스트 경로에서 실제 요청 → 서버 → 실제 표시</td>
+<td></td>
+</tr>
+<tr>
+<td>대회 요건</td>
+<td>공개된 허용 경로·제출 형식과 결과물을 대조</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>로컬 합격은 네이티브 합격이 아니다. 메시지 전송 API 성공은 챗봇 양방향 대화 성공이 아니다. 연결과 제출을 못 했더라도 사고 실습은 계속할 수 있다.</p></body></html>

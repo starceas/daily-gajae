@@ -1,0 +1,3 @@
+{"id": "v03", "category": "모호", "input": "오늘 몇 시에 닫아요?",
+ "expect": {"status": ["clarify"], "must_contain": ["요일"], "forbidden": [], "evidence": [], "notes_contain": []},
+ "rationale": "'오늘'의 요일 정보가 요청에 없다. 임의 가정 금지."}

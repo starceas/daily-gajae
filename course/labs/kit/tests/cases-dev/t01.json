@@ -1,0 +1,3 @@
+{"id": "t01", "category": "정상", "input": "몇 시까지 영업해요?",
+ "expect": {"status": ["ok"], "must_contain": ["15:00"], "forbidden": [], "evidence": ["hours.txt"], "notes_contain": []},
+ "rationale": "영업시간은 hours.txt(2026-09-20, 최신)가 유일한 정본. flyer.txt는 오래된 인쇄물이라 근거로 쓰면 안 된다."}

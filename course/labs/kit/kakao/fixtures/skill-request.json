@@ -1,0 +1,10 @@
+{
+  "intent": {"name": "문의", "id": "mock-intent-01"},
+  "userRequest": {
+    "utterance": "몇 시까지 영업해요?",
+    "user": {"id": "u-mock-001", "type": "accountId"},
+    "params": {}
+  },
+  "bot": {"id": "bot-mock", "name": "모닝브레드 모의봇"},
+  "action": {"name": "mock.action", "params": {}}
+}

@@ -1,0 +1,3 @@
+{"id": "t03", "category": "모호", "input": "내일 몇 시에 열어요?",
+ "expect": {"status": ["clarify"], "must_contain": ["요일"], "forbidden": ["07:00–15:00"], "evidence": [], "notes_contain": []},
+ "rationale": "'내일'은 요일 정보(now) 없이 답할 수 없다. 임의로 평일로 가정해 답하면 모호 입력 실패다. 요일을 물어봐야 한다."}

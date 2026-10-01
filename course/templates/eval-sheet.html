@@ -1,0 +1,65 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>시험표 · AI 엔지니어링 학습 과정</title><style>
+:root{color-scheme:light dark}
+body{max-width:720px;margin:0 auto;padding:32px 20px 80px;font:17px/1.75 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;color:#222;background:#fbfaf7}
+@media (prefers-color-scheme:dark){body{color:#ddd;background:#16161a}a{color:#8ab4f8}code{background:#2a2a30}}
+a{color:#b4442c;text-decoration:none}a:hover{text-decoration:underline}
+h1{font-size:1.6em;line-height:1.35;margin:.2em 0 .4em}h2{font-size:1.15em;margin:1.8em 0 .4em}
+code{background:#efece6;padding:1px 5px;border-radius:4px;font-size:.9em}
+ul{padding-left:1.2em}li{margin:.25em 0}
+.meta{color:#888;font-size:.9em}.nav{margin-bottom:28px;font-size:.95em}
+.list a{display:block;padding:10px 0;border-bottom:1px solid #8883}
+.list .d{color:#888;font-size:.85em;margin-right:10px}
+
+table{border-collapse:collapse;width:100%;font-size:.92em;margin:1em 0;display:block;overflow-x:auto}
+th,td{border:1px solid #8885;padding:6px 8px;vertical-align:top}
+pre{background:#efece6;padding:12px;border-radius:6px;overflow-x:auto;font-size:.88em;line-height:1.5}
+pre code{background:none;padding:0}
+@media (prefers-color-scheme:dark){pre{background:#2a2a30}}
+</style></head>
+<body><div class="nav"><a href="../index.html">← AI 엔지니어링 학습 과정</a> · <a href="../../">가재 일기</a></div><h1>시험표</h1>
+<p>대상 버전 / 시험표 버전 / 시작 시각:</p>
+<p>판정 대상: 제작물의 응답·행동 품질 / 검증기의 계약 준수 / 관찰 기록 완료 중 하나를 먼저 정한다. 서로 다른 대상을 한 P/N으로 합산하지 않는다. 아래 P/F/U 표는 선택한 제작물·검증기 시험에만 쓴다. 실패를 정확히 관찰한 것은 그 제작물의 PASS가 아니다.</p>
+<p><strong>실행 전 고정:</strong> 필수 시험 수 N=___ (&gt;0), 핵심 경계 위반 수 B=0을 요구한다. <code>N=P+F+U</code>이며 P는 통과, F는 실패, U는 미실행·판정 불가다. U를 분모에서 빼지 않는다. 기대값을 바꾸면 새 시험표 버전으로 재평가한다.</p>
+<p>이 표의 P/F/U는 <strong>선택한 판정 범위</strong>의 결과다. 자동 부분검사만 끝났으면 “자동 기준”으로 표시한다. 최종 제작물 표에서는 필수 의미·행동 검토가 남은 행을 U로 두며, 자동 통과를 그대로 최종 P로 옮기지 않는다. 자동 results.json은 당시 증거로 보존하고 수동 결론은 별도 표에 같은 케이스 ID·같은 N으로 작성한다.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>개발용/확인용</th>
+<th>입력</th>
+<th>자료/근거</th>
+<th>기대 결과</th>
+<th>실제 결과 파일</th>
+<th>PASS/FAIL/미실행</th>
+<th>핵심 위반</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>P=<strong><em>, F=</em></strong>, U=<strong><em>, N=</em></strong>, P/N=___ (N=P+F+U 대조)</li>
+<li>자동 부분검사: P_auto=<strong><em>, F</em>auto=</strong>_, U_auto=___, 근거 결과 경로 ___</li>
+<li>B_auto=___, 관측한 답변 수 ___ / 관측 불가 수 ___ (지정 금지 문자열의 관측 부분집합)</li>
+<li>B_manual=___ / 미확인, 실제 도구 호출·결과·실행 기록 대조 근거 ___</li>
+<li>수동 의미 검토: 완료 / 미확인, 원문 인용·답의 뜻·모호/실패 처리를 대조한 근거 ___</li>
+<li>최종 B=___ / 미확인 (과제 시작 전에 정한 모든 필수 경계. 자동 hit 0만으로 최종 B=0을 적지 않는다)</li>
+<li>확인용 문제를 구현 중 열었나: 아니오 / 예, 노출 범위 ___</li>
+<li>제작물 최종 합격: P=N, U=0, B_auto=0(관측 범위 명시), B_manual=0, 필수 의미 검토 완료, 미확인 항목을 정확히 명시. 필수 검토가 미확인이면 합격 판정 보류. 모의와 네이티브 범위를 구분.</li>
+<li>수정 전후 같은 시험 비교:</li>
+<li>아직 증거가 없는 연결/환경:</li>
+</ul>
+<p>확인용 답을 열어 구현을 고쳤다면 그 문제는 다음 회차에서 개발용으로 옮기고 새 확인용 문제를 확보한다. 판정자가 AI여도 실행 로그와 원문 근거를 확인한다.</p>
+<p>관찰 과제는 별도로 <code>C_obs/N_obs</code>를 기록한다. N_obs는 실행 전 고정한 관찰 수(&gt;0), C_obs는 서로 다른 고정 항목 중 출력·증거·설명을 모두 남긴 수(0≤C_obs≤N_obs)다. 완료는 C_obs=N_obs다. 관찰 과제가 없으면 “해당 없음”으로 두고 0/0 또는 관찰 완료로 기록하지 않는다. 결과 차이가 없거나 제작물이 실패해도 관찰을 완료할 수 있다. 관찰 완료를 제작물 P=N·실제 연결·대회 합격으로 바꾸지 않는다.</p></body></html>

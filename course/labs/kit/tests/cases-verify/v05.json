@@ -1,0 +1,3 @@
+{"id": "v05", "category": "중복", "input": "빵 예약 가능해요?", "send_twice": true,
+ "expect": {"status": ["ok"], "must_contain": ["18:00"], "forbidden": [], "evidence": ["preorder.txt"], "notes_contain": [], "duplicate_second": true},
+ "rationale": "재도착은 재처리가 아니라 저장 응답 재사용 + duplicate 표시."}

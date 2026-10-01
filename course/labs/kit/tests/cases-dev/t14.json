@@ -1,0 +1,3 @@
+{"id": "t14", "category": "중복(ID충돌)", "input": "몇 시까지 영업해요?", "send_twice": true, "input2": "환불해줘",
+ "expect": {"status": ["ok"], "must_contain": ["15:00"], "forbidden": [], "evidence": ["hours.txt"], "notes_contain": [], "duplicate_second": true},
+ "rationale": "scope 명시: 같은 id + 다른 본문 재도착은 충돌로 감지하지 않고 첫 응답을 재사용한다(id가 우선). 내용 충돌 감지는 이 장치 범위 밖."}

@@ -1,0 +1,154 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>04 — 실제 사고를 손으로 재현하기 · AI 엔지니어링 학습 과정</title><style>
+:root{color-scheme:light dark}
+body{max-width:720px;margin:0 auto;padding:32px 20px 80px;font:17px/1.75 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;color:#222;background:#fbfaf7}
+@media (prefers-color-scheme:dark){body{color:#ddd;background:#16161a}a{color:#8ab4f8}code{background:#2a2a30}}
+a{color:#b4442c;text-decoration:none}a:hover{text-decoration:underline}
+h1{font-size:1.6em;line-height:1.35;margin:.2em 0 .4em}h2{font-size:1.15em;margin:1.8em 0 .4em}
+code{background:#efece6;padding:1px 5px;border-radius:4px;font-size:.9em}
+ul{padding-left:1.2em}li{margin:.25em 0}
+.meta{color:#888;font-size:.9em}.nav{margin-bottom:28px;font-size:.95em}
+.list a{display:block;padding:10px 0;border-bottom:1px solid #8883}
+.list .d{color:#888;font-size:.85em;margin-right:10px}
+
+table{border-collapse:collapse;width:100%;font-size:.92em;margin:1em 0;display:block;overflow-x:auto}
+th,td{border:1px solid #8885;padding:6px 8px;vertical-align:top}
+pre{background:#efece6;padding:12px;border-radius:6px;overflow-x:auto;font-size:.88em;line-height:1.5}
+pre code{background:none;padding:0}
+@media (prefers-color-scheme:dark){pre{background:#2a2a30}}
+</style></head>
+<body><div class="nav"><a href="../index.html">← AI 엔지니어링 학습 과정</a> · <a href="../../">가재 일기</a></div><h1>04 — 실제 사고를 손으로 재현하기</h1>
+<p>목표: 네가 실제로 겪은 장애들을 <strong>읽는 게 아니라 재현</strong>한다. 각 시나리오는 <code>kit/failures/</code> 안의 안전한 모의 장치로, 실서비스·실제 폴더·자동 승인 키는 건드리지 않는다.</p>
+<p>시간(교육 설정): 45분. 전부 하려 하지 말고 최소 3개 시나리오를 완주한다.</p>
+<h2>준비</h2>
+<pre><code class="language-sh">cd &lt;학습 폴더&gt;
+python3 labs/kit/failures/selfcheck.py   # 대표 명령의 출력이 기대와 맞는지 먼저 확인
+</code></pre>
+<p>기대 출력: <code>15/15 통과</code>. 주의 — 이건 고정된 사례들의 출력 문자열 subset 검사다. 장치가 정상이라는 증명이나 "실제 사건과 원리가 같다"는 증명이 아니며, 7개 시나리오 전체를 커버하지도 않는다. 실패한 항목이 있으면 그 시나리오는 건너뛰고 나머지부터 한다.</p>
+<h2>실행 행동 — 7개 시나리오</h2>
+<p>각 시나리오는 "예측 → 실행 → 실제와 대조 → 왜" 순서다.</p>
+<h3>① 경쟁 조건 — 확인과 실행 사이 (race)</h3>
+<p>네 사건: 자동 승인기가 확인과 실행 사이의 경쟁 조건으로 7차까지 BLOCK.</p>
+<pre><code class="language-sh">python3 labs/kit/failures/race/sim.py --mode order --events check,cancel,act
+python3 labs/kit/failures/race/sim.py --mode order --events check,act,cancel
+python3 labs/kit/failures/race/sim.py --mode counter --lock off
+python3 labs/kit/failures/race/sim.py --mode counter --lock on
+</code></pre>
+<ul>
+<li>예측 먼저 적는다: check,cancel,act 순서면 결과가 뭘까?</li>
+<li><code>counter --lock off</code>는 실행할 때마다 실제 값이 달라질 수 있다 — 그게 경쟁 조건의 본질이다. <code>--lock on</code>과 비교한다.</li>
+</ul>
+<h3>② 중복 이벤트 — 멱등성 (dup)</h3>
+<p>네 사건: 같은 답이 중복 전송됐다.</p>
+<pre><code class="language-sh">python3 labs/kit/failures/dup/sim.py --dedupe off
+python3 labs/kit/failures/dup/sim.py --dedupe on
+python3 labs/kit/failures/dup/sim.py --dedupe on --replay
+</code></pre>
+<ul>
+<li><code>--replay</code>는 보존된 <code>state.json</code>을 지우지 않고 큐를 다시 유입한다 — 저장된 중복 방지 정보가 살아 있으면 재실행해도 skip이 유지됨을 확인할 뿐이다. <strong>상태 상실(state.json 유실)은 이 명령으로 재현되지 않는다</strong> — 그 경우 다시 중복된다는 건 이 장치의 시연 범위 밖이다.</li>
+<li>포인트: request_id 없이 "내용이 같다"로는 진짜 중복과 "같은 내용의 다른 요청"을 구별 못 한다.</li>
+<li><strong>한계 명시:</strong> <code>mock_agent.py</code>의 out 파일 존재 확인과 이 시뮬의 dedupe는 "순차 재입력"만 잡는 모형이다. 동시에 두 요청이 도착하거나(①의 경쟁 조건), 프로세스가 재시작되거나, 외부 시스템이 "한 번만 처리"를 약속해야 하는 상황(exactly-once)은 이 장치가 보장하지 않는다 — 그걸 증명하려면 잠금·영속 상태·수신 확인이 따로 필요하다.</li>
+</ul>
+<h3>③ timeout ≠ 실패 (timeout)</h3>
+<pre><code class="language-sh"># 먼저 첫 시도만 본다 — 두 경우의 ledger가 다르다
+python3 labs/kit/failures/timeout/sim.py --fail request
+python3 labs/kit/failures/timeout/sim.py --fail response
+
+# 그 다음 같은 요청을 재시도한 경우를 본다
+python3 labs/kit/failures/timeout/sim.py --fail request --retry
+python3 labs/kit/failures/timeout/sim.py --fail response --retry
+</code></pre>
+<ul>
+<li><strong>첫 시도만 보면</strong> ledger(실제 부수효과)가 다르다: 요청 상실은 <code>[]</code>(작업 안 됨, D0E0), 응답 상실은 <code>["r1"]</code>(작업은 됐지만 응답만 잃음, D1E1). 클라이언트가 본 것은 둘 다 "응답 없음"뿐이다 — 그래서 구별할 수 없는 게 문제다.</li>
+<li><strong><code>--retry</code> 후 최종 ledger는 둘 다 <code>["r1"]</code>로 같아진다.</strong> 서버가 request_id로 중복 처리를 막았기 때문이다. 최종 상태가 같다고 첫 시도에 일어난 일이 같았다는 뜻이 아니다 — dedup은 "중복 처리 방지"이지 "전달 보장"이 아니다.</li>
+<li>질문: "응답 상실" 상태에서 무조건 재시도하면 왜 위험한가? → 서버가 request_id로 중복을 막지 않으면 작업이 두 번 된다.</li>
+</ul>
+<h3>④ 설정 덮어쓰기 (config)</h3>
+<p>네 사건: 채널 설정이 전역 설정을 덮어 모델 교체가 안 먹혔다.</p>
+<pre><code class="language-sh">python3 labs/kit/failures/config/sim.py --reset --set-global model=sol
+python3 labs/kit/failures/config/sim.py --set-channel ch1 model=ds --channel ch1
+python3 labs/kit/failures/config/sim.py --channel ch1 --set-model opus
+</code></pre>
+<ul>
+<li>포인트: 각 값에 ← 출처가 붙어 나온다. "바꿨는데 안 먹힌다"는 대부분 위 층이 덮고 있는 것이다.</li>
+<li>실제 설정 파일은 이 시뮬레이션의 <code>_work/</code> 안 json뿐이다. 네 실제 CLI 설정은 건드리지 않는다.</li>
+</ul>
+<h3>⑤ DNS와 HTTP는 다른 층 (net)</h3>
+<pre><code class="language-sh">for m in dns refused http502 timeout; do
+  echo &quot;== $m ==&quot;; python3 labs/kit/failures/net/sim.py --fail $m
+done
+</code></pre>
+<ul>
+<li><code>--reveal</code> 없이 먼저 증상만 보고 "어느 층?"을 적는다. 그 다음 <code>--reveal</code>로 대조.</li>
+<li>네 사건 대조: 502는 앞단까지는 도달했고 게이트웨이가 upstream에서 무효 응답을 받았다는 뜻이다 — "뒤 서버가 죽었다"는 원인 후보 중 하나일 뿐 502가 확정해 주지 않는다(연결 불능·깨진 응답·설정 오류 등). DNS 실패는 서버에 닿지도 못했다는 뜻 — 고치는 곳이 다르다.</li>
+<li><strong>한계 명시:</strong> 이 시뮬은 각 층의 "관찰 증상 모양"을 미리 만든 문자열로 보여줄 뿐이다. sim 출력만으로 실제 네트워크 장애를 진단할 수 없다 — 실제 진단은 실제 조회(<code>dig</code>·<code>curl</code> 등)와 증거가 필요하다.</li>
+</ul>
+<h3>⑥ 권한의 층 (perms)</h3>
+<pre><code class="language-sh">python3 labs/kit/failures/perms/sim.py
+</code></pre>
+<ul>
+<li>kit 안의 sandbox 폴더만 만들고 권한을 바꿨다 되돌린다. 네 실제 폴더는 안 건드린다.</li>
+<li>포인트: "권한 오류"의 원인 후보는 층별로 다르다 — ① 파일 모드(rwx), ② macOS TCC(앱별 접근 허용), ③ 앱 샌드박스(격리 컨테이너 — TCC와 별개 장치), ④ 도구의 승인 정책. 어느 층인지 단서를 먼저 본다.</li>
+<li><strong>한계 명시:</strong> 이 시뮬이 실제로 재현하는 건 kit 사본의 rwx 변경뿐이다 — 실제 TCC 동작이나 샌드박스 격리를 검증한 게 아니다. ②③의 실증은 이 장치 범위 밖이다.</li>
+</ul>
+<h3>⑦ 컨텍스트 오염 (context)</h3>
+<p>네 사건: 긴 대화에서 모델이 규칙을 잊어 매 턴 규칙을 다시 넣는 훅을 썼다.</p>
+<pre><code class="language-sh">python3 labs/kit/failures/context/sim.py --window 20
+python3 labs/kit/failures/context/sim.py --window 20 --reinject
+</code></pre>
+<ul>
+<li>포인트: 이 모의가 보여주는 건 하나의 원인 후보뿐이다 — "유한 줄 창 + 규칙 문자열 검출" 모형에서 규칙이 창 밖으로 밀려나면 못 지킨다.</li>
+<li><strong>단정 금지:</strong> 실제 사건에서 모델이 규칙을 잊은 원인이 "시야 밖으로 밀려난 것"이었다고 이 장치가 증명하지 않는다 — 이 코드는 그 사건을 진단하지 않았다. 실제 원인 후보는 압축 손실·주의 경쟁·명령 충돌 등 여럿이고, 별도 시험으로 좁혀야 한다.</li>
+<li>재주입은 대책 후보일 뿐이며 "보인다 ≠ 지킨다" — 시험으로 검증해야 한다.</li>
+</ul>
+<h2>출력 예 / 기대 결과</h2>
+<ul>
+<li>selfcheck: <code>15/15 통과</code></li>
+<li>race order A: 마지막 상태에 <code>acted</code> + "취소된 요청을 승인" 판독문.</li>
+<li>dup off: <code>'m1': 3</code> — 중복 3번 기록.</li>
+</ul>
+<h2>산출물</h2>
+<ul>
+<li>학습 기록(learning-log)에 시나리오별로: 내 예측 / 실제 출력 / 왜 달랐나(또는 맞았나).</li>
+<li>최소 3개 시나리오를 완주했다면 나머지는 재개 지점에 남긴다.</li>
+</ul>
+<h2>실패 분기</h2>
+<table>
+<thead>
+<tr>
+<th>증상</th>
+<th>원인 후보</th>
+<th>다음 행동</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>selfcheck에서 특정 항목 FAIL</td>
+<td>스크립트 의존 경로 문제</td>
+<td><code>cd</code> 위치를 repo 루트로 확인, 명령을 절대경로로 재시도</td>
+</tr>
+<tr>
+<td>counter --lock off가 매번 400</td>
+<td>경쟁이 우연히 안 생김(빠른 머신)</td>
+<td>rounds를 올려 재시도하거나 order 모드로 원리만 확인</td>
+</tr>
+<tr>
+<td>권한 되돌리기 실패로 폴더 잔류</td>
+<td>중간에 Ctrl+C</td>
+<td><code>_work</code>, <code>sandbox</code> 폴더를 손으로 삭제(kit 안이므로 안전)</td>
+</tr>
+<tr>
+<td>"이게 내 사건과 뭐가 다른가" 막힘</td>
+<td>모형은 원인 후보 하나를 보여줄 뿐이며, 동일 증상이어도 실제 원인은 다를 수 있음(추가 관측 전 미확인)</td>
+<td>learning-log에 모형과 실제 사건의 원인 후보·차이·판별 증거를 분리해 적고, 동일성은 미확인으로 남긴다</td>
+</tr>
+</tbody>
+</table>
+<h2>합격 기준 (실행 전 고정: N=3)</h2>
+<ol>
+<li>최소 3개 시나리오를 직접 실행하고 출력을 기록했다.</li>
+<li>하나 이상에서 "내 예측"과 "실제"를 적고 차이를 설명했다.</li>
+<li>timeout과 응답 상실의 차이, 권한 오류의 층별 후보(rwx·TCC·샌드박스·도구 정책) 중 하나 이상을 자기 말로 썼다.</li>
+</ol>
+<p>합격 = 3/3. 7개 다 돌릴 필요는 없다 — 다만 selfcheck 통과는 "대표 명령이 기대 출력을 냈다"는 고정 사례 subset 확인일 뿐, 장치 정상·실제 사건과의 원리 동일성·시나리오 전체 증명이 아니다.</p></body></html>

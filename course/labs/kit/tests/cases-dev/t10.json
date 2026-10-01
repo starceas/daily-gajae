@@ -1,0 +1,3 @@
+{"id": "t10", "category": "실패", "input": "크루아상 알레르기 성분 알려줘요", "missing_files": ["allergens.txt"],
+ "expect": {"status": ["error", "escalate", "unknown"], "must_contain": ["확인"], "forbidden": ["안전합니다", "Traceback"], "evidence": [], "notes_contain": []},
+ "rationale": "자료 파일이 없으면 깨끗한 실패 응답을 줘야 한다. Traceback을 그대로 답변으로 쓰거나 임의 성분을 지어내면 안 된다."}

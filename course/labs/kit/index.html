@@ -1,0 +1,64 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>labs/kit — 오프라인 실습 장치 · AI 엔지니어링 학습 과정</title><style>
+:root{color-scheme:light dark}
+body{max-width:720px;margin:0 auto;padding:32px 20px 80px;font:17px/1.75 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;color:#222;background:#fbfaf7}
+@media (prefers-color-scheme:dark){body{color:#ddd;background:#16161a}a{color:#8ab4f8}code{background:#2a2a30}}
+a{color:#b4442c;text-decoration:none}a:hover{text-decoration:underline}
+h1{font-size:1.6em;line-height:1.35;margin:.2em 0 .4em}h2{font-size:1.15em;margin:1.8em 0 .4em}
+code{background:#efece6;padding:1px 5px;border-radius:4px;font-size:.9em}
+ul{padding-left:1.2em}li{margin:.25em 0}
+.meta{color:#888;font-size:.9em}.nav{margin-bottom:28px;font-size:.95em}
+.list a{display:block;padding:10px 0;border-bottom:1px solid #8883}
+.list .d{color:#888;font-size:.85em;margin-right:10px}
+
+table{border-collapse:collapse;width:100%;font-size:.92em;margin:1em 0;display:block;overflow-x:auto}
+th,td{border:1px solid #8885;padding:6px 8px;vertical-align:top}
+pre{background:#efece6;padding:12px;border-radius:6px;overflow-x:auto;font-size:.88em;line-height:1.5}
+pre code{background:none;padding:0}
+@media (prefers-color-scheme:dark){pre{background:#2a2a30}}
+</style></head>
+<body><div class="nav"><a href="../../index.html">← AI 엔지니어링 학습 과정</a> · <a href="../../../">가재 일기</a></div><h1>labs/kit — 오프라인 실습 장치</h1>
+<p>전부 Python 표준 라이브러리만 쓰는 로컬 모의 도구다. 외부 호출·계정·키·설정 변경 없음. "모의(O) 증거"만 만들며 실제 모델·카카오·대회 수용을 대체하지 않는다.</p>
+<table>
+<thead>
+<tr>
+<th>폴더</th>
+<th>역할</th>
+<th>대표 명령</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>personas/</code></td>
+<td>01 인터뷰 인물(P01) — <code>p01-role.md</code>는 CLI가 읽는다(학습자 미열람), <code>p01-open.md</code>는 공개 소개, <code>materials/</code>는 자료 묶음(충돌·인젝션 포함)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>agent/</code></td>
+<td>규칙 기반 모의 응답기 — 입출력 계약의 기준 예제</td>
+<td><code>python3 mock_agent.py --request ... --data ... --out ...</code></td>
+</tr>
+<tr>
+<td><code>tests/</code></td>
+<td>시험 실행기 <code>run.py</code>(<code>--agent</code> 실행 / <code>--responses</code> 채점, 케이스 입력·응답 스키마·근거 인용 검증, send_twice 시도별 보존) + 개발용 <code>cases-dev/</code>(14개) + 확인용 <code>cases-verify/</code>(6개, 답은 ANSWERS.md 분리) + <code>selfcheck.py</code>(양성+음성 프로브)</td>
+<td><code>python3 tests/selfcheck.py</code></td>
+</tr>
+<tr>
+<td><code>failures/</code></td>
+<td>실제 사고 재현 시뮬레이션 7종 + <code>selfcheck.py</code></td>
+<td><code>python3 failures/selfcheck.py</code></td>
+</tr>
+<tr>
+<td><code>kakao/</code></td>
+<td>카카오 스킬 요청→응답 모의 어댑터(loopback 전용)</td>
+<td><code>python3 kakao/selfcheck.py</code></td>
+</tr>
+<tr>
+<td><code>exams/</code></td>
+<td>모의전 1~3회 인물·자료·미공개 기대</td>
+<td><code>round*/role.md</code>를 CLI에 읽혀 인터뷰</td>
+</tr>
+</tbody>
+</table>
+<p>응답 계약(labs/README.md 참조): <code>--request/--data/--out</code> → <code>&lt;out&gt;/&lt;request_id&gt;.json</code>에 <code>request_id,status,answer,evidence,duplicate,notes</code>.</p></body></html>

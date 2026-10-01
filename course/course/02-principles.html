@@ -1,0 +1,271 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>사고에서 배우는 원리 · AI 엔지니어링 학습 과정</title><style>
+:root{color-scheme:light dark}
+body{max-width:720px;margin:0 auto;padding:32px 20px 80px;font:17px/1.75 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;color:#222;background:#fbfaf7}
+@media (prefers-color-scheme:dark){body{color:#ddd;background:#16161a}a{color:#8ab4f8}code{background:#2a2a30}}
+a{color:#b4442c;text-decoration:none}a:hover{text-decoration:underline}
+h1{font-size:1.6em;line-height:1.35;margin:.2em 0 .4em}h2{font-size:1.15em;margin:1.8em 0 .4em}
+code{background:#efece6;padding:1px 5px;border-radius:4px;font-size:.9em}
+ul{padding-left:1.2em}li{margin:.25em 0}
+.meta{color:#888;font-size:.9em}.nav{margin-bottom:28px;font-size:.95em}
+.list a{display:block;padding:10px 0;border-bottom:1px solid #8883}
+.list .d{color:#888;font-size:.85em;margin-right:10px}
+
+table{border-collapse:collapse;width:100%;font-size:.92em;margin:1em 0;display:block;overflow-x:auto}
+th,td{border:1px solid #8885;padding:6px 8px;vertical-align:top}
+pre{background:#efece6;padding:12px;border-radius:6px;overflow-x:auto;font-size:.88em;line-height:1.5}
+pre code{background:none;padding:0}
+@media (prefers-color-scheme:dark){pre{background:#2a2a30}}
+</style></head>
+<body><div class="nav"><a href="../index.html">← AI 엔지니어링 학습 과정</a> · <a href="../../">가재 일기</a></div><h1>사고에서 배우는 원리</h1>
+<p>네가 실제로 겪은 여섯 사건에서 출발한다. 각 장은 같은 순서다: <strong>무슨 일이 있었나 → 비유 → 실제 작동 → 필요한 용어 → 작은 입력/출력 예 → 반례 → 스스로 확인할 질문과 해설</strong>. 용어는 사고 속에서 익히는 게 목적이고, 따로 외우는 목록이 아니다.</p>
+<p>읽는 법: 하루 한 장. 각 장의 "스스로 확인"을 AI를 닫고 3문장으로 답해 본다. 답이 막히면 그 장이 아직 안 잡힌 것이다. 실제로 재현해 보는 실습은 <a href="../labs/04-failures.html">장애 재현 실습</a>에 있다.</p>
+<hr />
+<h2>1. 경쟁 조건과 원자성 — 확인과 행동 사이의 빈틈</h2>
+<p><strong>사건</strong>: 화면을 읽고 승인 키를 보내는 자동 승인기가 "확인했다 → 키를 눌렀다" 사이에 상태가 바뀌어, 잘못된 시점에 승인을 보내 7차까지 BLOCK이 났다.</p>
+<p><strong>비유</strong>: 가게 문 앞에서 "비었나?"를 보고 들어가는데, 보는 순간과 들어가는 순간이 다르면 그 사이 다른 사람이 들어간다. 확인과 행동이 두 동작이면 그 사이에 세계는 변한다.</p>
+<p><strong>실제 작동</strong>: "읽고 판단하고 행동"이 세 단계로 나뉘어 있으면, 읽은 값이 행동 시점에도 유효하다는 보장이 없다. 이걸 <strong>경쟁 조건(race condition)</strong> 이라 한다 — 결과가 실행 순서에 따라 달라지는 상태. 막는 방법은 확인부터 행동까지를 <strong>쪼갤 수 없는 한 동작(원자성, atomicity)</strong> 으로 묶거나, 그 구간에 <strong>잠금(lock)</strong> 을 걸어 한 번에 하나만 지나가게 하는 것이다. 운영체제 수준의 배경은 <a href="https://pages.cs.wisc.edu/~remzi/OSTEP/threads-intro.pdf">OSTEP 26장</a>(S01, §26.3~26.5)이 정석이다.</p>
+<p><strong>용어</strong>: 경쟁 조건(race condition), 원자성(atomicity — 더 쪼갤 수 없는 단위), 임계 구역(critical section — 한 번에 하나만 들어가야 하는 구간), 잠금(lock). 보안·시스템 용어로 확인-행동 취약점을 TOCTOU(time-of-check to time-of-use)라 부른다.</p>
+<p><strong>작은 예</strong>:</p>
+<pre><code>t0: 승인기가 상태 파일을 읽음        → pending: req-7
+t1: (그 사이) 요청 주체가 req-7을 취소 → 상태는 cancelled
+t2: 승인기가 t0의 기억으로 승인 키 전송 → 취소된 요청에 승인
+</code></pre>
+<p><strong>반례</strong>: "빠르게 연달아 처리하면 괜찮지 않나?" — 빠르기는 틀릴 확률을 줄일 뿐 순서를 보장하지 않는다. "지금까지 한 번도 안 틀렸다"는 "틀릴 수 없다"가 아니다. 또 잠금의 오해도 있다 — 같은 잠금을 두 주체가 쓴다고 교착(deadlock)이 되는 건 아니다. P1이 잠금을 쥐는 동안 P2가 기다리고, P1이 놓으면 P2가 진행하는 건 <strong>정상 대기</strong>다. 교착은 대기의 <strong>순환</strong>이다 — P1이 잠금 L1을 쥐고 L2를 기다리는 동안 P2가 L2를 쥐고 L1을 기다리면, 둘 다 놓을 수 없어 영원히 멈춘다. 조건은 참여자 수가 아니라 끊을 수 없는 대기 고리가 닫혔는가다.</p>
+<p><strong>스스로 확인</strong>:</p>
+<ol>
+<li>네 구조에서 "확인"과 "행동" 사이에 무엇이 끼어들 수 있나? — <em>해설: 파일 읽기, 화면 갱신, 다른 세션의 쓰기, 네트워크 지연. 끼어들 수 있는 것이 있으면 그 사이가 경쟁 구간.</em></li>
+<li>잠금으로 막지 못한 것은? — <em>해설: 잠금 밖에서 일어난 상태 변화, 잠금을 안 거는 다른 경로. 잠금은 "잠금을 존중하는 참여자" 사이에서만 작동한다.</em></li>
+</ol>
+<hr />
+<h2>2. 멱등성과 전달 보장 — 같은 답이 두 번 가는 이유</h2>
+<p><strong>사건</strong>: 같은 답이 중복 전송됐다. "전달 ID로 한 번만 보내기"로 고쳤다.</p>
+<p><strong>비유</strong>: 엘리베이터 호출 버튼은 열 번 눌러도 한 번 온다(멱등). 우편물은 같은 편지를 두 번 넣으면 두 통이 간다(비멱등). 우체국이 "확인 전화"를 해 주지 않으면 보낸 사람은 도착 여부를 모른다 — 그래서 다시 보낸다.</p>
+<p><strong>실제 작동</strong>: 응답이 안 온 쪽은 그것만으로 두 실패를 구별할 수 없다 — <strong>요청 상실</strong>(요청 자체가 도착 전에 사라짐 → D=0, E=0)과 <strong>응답 상실</strong>(처리는 됐는데 응답만 잃음 → D=1, E=1). 둘 다 "응답 없음"으로 보이지만 전달 여부가 다르다. 그래서 재전송하는 게 일반적이고, 중복 도착이 생긴다.</p>
+<p>두 수를 따로 센다: <strong>도달 건수 D</strong>(요청이 상대에게 실제로 도착한 횟수)와 <strong>의도한 효과 E</strong>(원하는 처리가 실제로 적용된 횟수). 전달 보장이라는 이름은 <strong>D에 대한 약속</strong>이다 — <strong>at-most-once는 D≤1</strong>(재시도 안 해서 중복은 없지만 잃을 수 있음), <strong>at-least-once는 D≥1</strong>(도착할 때까지 또는 포기 조건까지 재시도). 단, D≥1에는 성립 가정이 붙는다 — 재시도가 계속되고, 시도 사이에 상태(요청 ID·기록)가 보존되고, <strong>수신 측이 다시 받을 수 있는 상태로 회복된다</strong>는 가정. 영구 단절이면 모든 시도가 도착 실패라서 계속 시도해도 D=0이다 — 계속 시도·대기열·영속 저장은 그 가정을 지탱하는 장치이지, 그 자체로 D≥1의 충분조건이 아니다.</p>
+<p><strong>중복 제거(dedup)는 별도 성질</strong>이다 — D&gt;1로 중복 도착해도, 받는 쪽이 요청 ID로 E의 중복 적용을 억제하는 것이다. D에 대한 보장과 E에 대한 보장을 섞지 않고, (D=2, E=1)이라는 결과만 보고 "dedup이 일했다"고 역추론하지도 않는다 — dedup 없이도 두 번째 도착이 처리 전에 crash하면 같은 (2,1)이 나온다. dedup이라 판정하려면 "ID 조회 → 이미 처리된 기록 확인 → 재처리 차단"이 남은 로그 같은 <strong>원인 증거</strong>가 필요하다.</p>
+<p><strong>용어</strong>: 도달 건수 D, 의도한 효과 E, 멱등성(idempotency — 같은 요청을 여러 번 적용해도 결과가 같음), 전달 보장(at-most-once D≤1 / at-least-once D≥1, 성립 전제 있음), 중복 제거(dedup — E의 중복 억제), effectively-once(D&gt;1이어도 E=1로 보이는 결과), 영속화(persistence), 재개 가능성(resumability).</p>
+<p><strong>작은 예</strong>:</p>
+<pre><code>요청: {id: &quot;req-7&quot;, 답: &quot;승인&quot;}
+1차 도착: 처리 기록 없음 → 처리 → 응답 발송 → 기록 {req-7: done, 응답사본}
+2차 도착(재전송): 기록에 req-7 있음 → 재처리 없이 저장된 응답만 반환
+</code></pre>
+<p><strong>반례</strong>:</p>
+<ul>
+<li>"재시도를 없애면 중복도 없지 않나?" — 그러면 D≤1(at-most-once)로 후퇴다. 요청이 상실되면 영영 안 가고, 응답만 상실되면 갔는지 모른 채 끝난다 — 둘 다 "응답 없음"으로 보이는 이 문제를 재시도 없이는 풀 수 없다.</li>
+<li><strong>(D=2, E=1)은 그 자체로 dedup의 증거가 아니다</strong> — 두 번째 도착이 처리 전에 crash해도 같은 (2,1)이 된다. dedup이라 판정하려면 ID 조회·차단이 일어난 기록 같은 원인 증거가 필요하다.</li>
+<li><strong>(D=0, E=0)</strong> — 유한 재시도가 전부 실패하면(영구 단절 포함) 요청은 한 번도 안 갔다. dedup·대기열이 있어도 at-least-once는 입증되지 않는다 — 수신 가능성 회복이라는 가정이 깨지면 D≥1은 성립하지 않는다.</li>
+<li>기록의 빈틈: 요청을 처리하고 "처리했다"고 기록하기 사이에 프로세스가 죽으면 기록이 없어서 재시도를 또 처리한다 — 처리와 기록을 한 동작으로 묶지 않으면 그 사이가 경쟁 구간이다(효과의 원자성 한계).</li>
+<li><strong>외부 효과의 exactly-once는 주장하지 않는다</strong>: 카카오 발송·메일 전송처럼 한 번 나가면 돌이킬 수 없는 동작은 "정확히 한 번"을 메시지 구조만으로 보장할 수 없다. 가능한 목표는 수신측 멱등 처리로 "결과적으로 한 번의 효과"까지다.</li>
+</ul>
+<p><strong>스스로 확인</strong>:</p>
+<ol>
+<li>응답 상실과 실제 실패를 보낸 쪽이 구별할 수 있나? — <em>해설: 없다 — 그 "응답 없음"이 요청 상실인지 응답 상실인지도 모른다. 그래서 재시도(D를 위해)와 멱등 수신(E를 위해)이 쌍으로 필요하고, 둘의 역할은 다르다.</em></li>
+<li>재시작 뒤 같은 요청이 오면? — <em>해설: 처리 기록이 디스크에 남아 있어야 중복을 걸러낸다. 메모리에만 있으면 재시작이 곧 중복이다.</em></li>
+</ol>
+<hr />
+<h2>3. 설정 우선순위 — 분명히 바꿨는데 왜 안 바뀌나</h2>
+<p><strong>사건</strong>: 채널별 설정이 전역 설정을 덮어서, 전역에서 모델을 바꿨는데 실제로는 교체되지 않았다.</p>
+<p><strong>비유</strong>: 아파트 전체 난방을 22도로 맞춰도, 방마다 개별 온도조절기가 있으면 방은 방 설정을 따른다. "안 바뀐다"가 아니라 "더 가까운 층이 이겼다".</p>
+<p><strong>실제 작동</strong>: 설정은 겹겹이다 — 기본값 / 전역 / 프로젝트 / 채널 / 세션·명령 한 번. 보통 <strong>더 구체적인(가까운) 층이 이긴다</strong>. "바꿨는데 안 바뀐" 상황은 대부분 셋 중 하나다: 더 가까운 층이 덮고 있거나, 읽는 시점이 네가 바꾼 시점보다 앞이거나(시작할 때 한 번만 읽음), 아예 다른 파일을 읽고 있거나.</p>
+<p><strong>용어</strong>: 설정 범위(scope), 우선순위(precedence), 유효 설정(effective configuration — 모든 층을 합산해 실제 적용된 값).</p>
+<p><strong>작은 예</strong>:</p>
+<pre><code>전역 설정: model = A
+채널 설정: model = B     ← 채널이 더 가까운 층
+행동: 전역을 model = C로 변경
+유효 값: 채널에서 실행하면 여전히 B  (C가 아니다!)
+</code></pre>
+<p><strong>반례</strong>: "전역이 항상 이기면 안전하지 않나?" — 그러면 채널별 예외가 불가능하다. 문제는 우선순위 자체가 아니라 <strong>어느 층이 이겼는지 모르는 것</strong>이다. 도구가 "현재 유효 값과 그 출처"를 보여주는 명령을 가졌다면 그걸 먼저 찾는다. 없으면 층 목록을 문서에서 확인해 직접 그린다.</p>
+<p><strong>스스로 확인</strong>:</p>
+<ol>
+<li>교체가 안 먹혔을 때 첫 질문은? — <em>해설: "누가 이겼나." 새 값이 틀렸는지가 아니라 유효 값이 어느 층에서 왔는지를 본다.</em></li>
+<li>같은 이름의 설정이 세 파일에 있으면? — <em>해설: 우선순위 규칙 없이는 예측 불가. 실습에서는 실제로 값을 다르게 넣고 어디가 이기는지 관찰한다 — 추측 금지.</em></li>
+</ol>
+<hr />
+<h2>4. DNS·HTTP·502·timeout — "안 됨"은 층마다 다르다</h2>
+<p><strong>사건</strong>: 네트워크가 끊기면서 502가 뜨고, DNS 실패도 겪었다.</p>
+<p><strong>비유</strong>: 전화 걸기다. 전화번호부에서 번호를 찾고(DNS), 상대 집까지 선이 연결되고(TCP), 상대가 수화기를 들어 말한다(HTTP 응답). 어느 단계에서 끊겼느냐에 따라 전혀 다른 고장이다.</p>
+<p><strong>실제 작동</strong>:</p>
+<ul>
+<li><strong>DNS 실패</strong> — 이름(example.com)을 주소(숫자 IP)로 못 바꿨다. 상대와 통신 이전에 실패. <code>Could not resolve host</code> 같은 메시지.</li>
+<li><strong>연결 실패</strong> — 주소는 알지만 길이 없거나 상대가 문을 닫았다(connection refused).</li>
+<li><strong>timeout</strong> — "정한 시간을 넘었다"는 뜻일 뿐이다. 이름 조회, 연결, 응답 대기 <strong>어느 단계에서도</strong> 걸 수 있다. 연결까지 됐는지조차 이 정보만으로는 모른다 — 어느 단계의 timeout인지는 오류 종류와 걸린 시점으로 따로 확인한다.</li>
+<li><strong>502 (Bad Gateway)</strong> — 네 요청이 서버에 직접 간 게 아니라 중간 대리자(프록시·게이트웨이)를 거쳤는데, 대리자가 뒤쪽 서버에서 나쁜 응답을 받았다는 뜻. <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110 §15.6.3</a>(S02)의 정의다. <strong>네 요청이 틀렸다는 뜻도, 뒤쪽이 죽었다는 확정도 아니다</strong> — 중간자의 보고일 뿐.</li>
+<li><strong>504</strong> — 대리자가 뒤쪽 응답을 기다리다 시간 초과.</li>
+</ul>
+<p><strong>재시도(retry)와 backoff</strong>: timeout 뒤 바로 다시 치면 과부하 중인 서버를 더 밀어넣는다. 그래서 재시도 간격을 점점 늘리는 게 backoff다. 단, 재시도는 2장의 멱등성과 직결된다 — 멱등하지 않은 요청(예: 결제·발송 POST)을 무작정 재시도하면 중복 효과가 난다. <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110 §9.2.2</a>가 어느 메서드가 멱등인지를 정한다.</p>
+<p><strong>용어</strong>: DNS, HTTP 상태 코드, 502/504, timeout, retry, backoff(재시도 간격 증가), 멱등 메서드.</p>
+<p><strong>반례</strong>: "502가 떴으니 서버가 죽었다" — 아니다. 대리자↔뒤쪽 사이의 고장일 수도, 뒤쪽이 느린 것일 수도 있다. "재시도하면 되지" — 멱등성 없이 재시도하면 2장 사건(중복)으로 간다.</p>
+<p><strong>스스로 확인</strong>:</p>
+<ol>
+<li><code>Could not resolve host</code>와 <code>HTTP 502</code>의 차이는? — <em>해설: 전자는 상대를 찾지도 못한 것(DNS 층), 후자는 찾아가고 중간자를 거쳤는데 뒤쪽 응답이 나쁜 것(HTTP 층). 원인 후보가 완전히 다르다.</em></li>
+<li>timeout 직후 요청이 실제로 처리됐을 가능성은? — <em>해설: 있다. 그래서 비멱등 요청의 재시도에는 중복 제거 키가 필요하다.</em></li>
+</ol>
+<hr />
+<h2>5. 파일 권한·샌드박스·TCC — 거절도 층이 있다</h2>
+<p><strong>사건</strong>: macOS 폴더 권한 때문에 세션이 실패했다.</p>
+<p><strong>비유</strong>: 건물 출입이 두 단계다. 문마다 걸린 자물쇠(파일 권한)와, 층 입구 보안실이 신분증을 보는 절차(macOS의 TCC)는 별개다. 자물쇠가 열려 있어도 보안실이 막으면 못 들어간다.</p>
+<p><strong>실제 작동</strong>: macOS에서 파일 접근은 최소 두 층을 지난다.</p>
+<ol>
+<li><strong>전통적 권한(rwx)</strong> — 파일마다 소유자·읽기·쓰기·실행 비트. <code>Permission denied</code>가 보이면 보통 이 층.</li>
+<li><strong>TCC(사생활 보호)</strong> — 터미널·앱 같은 "주체"가 Documents 같은 보호 폴더·카메라·연락처에 닿으려면 OS가 앱 단위로 허용을 관리한다. 이 층이 막으면 명확한 오류 없이 빈 결과·실패로 나타날 수 있다.</li>
+</ol>
+<p>"ls는 되는데 에이전트가 못 읽는다"는 후보 하나일 뿐 확정이 아니다 — 주체가 다른 게 원인일 수도 있지만, 둘이 다른 폴더에서 실행됐거나 다른 파일을 읽었거나 오류가 삼켜졌을 수도 있다. 대조할 것: 실제로 실행된 프로세스와 그 작업 폴더, 읽으려 한 정확한 파일 경로, 오류 메시지 원문, 그 파일의 권한. 진단의 첫 질문은 <strong>"거절당한 주체가 누구고, 어느 층에서 거절됐나"</strong> 를 후보로 두고 위 네 가지로 좁히는 것이다.</p>
+<p><strong>용어</strong>: 파일 권한(rwx 비트), 소유권, 샌드박스(프로세스가 닿을 수 있는 범위를 울타리로 제한), TCC, 최소 권한(least privilege — 필요한 것만 열기).</p>
+<p><strong>반례</strong>: "권한을 전부 열어주면 해결되지 않나?" — 되긴 해도 원인을 모른 채 경계를 허무는 것이다. 권한을 넓히는 건 '수정'이 아니라 '우회'로 기록한다. 실습에서는 실제 폴더 권한을 바꾸지 않고 사본 폴더에서 재현한다(<a href="../labs/04-failures.html">장애 재현 실습</a>).</p>
+<p><strong>스스로 확인</strong>:</p>
+<ol>
+<li>같은 명령이 터미널에서는 되고 에이전트에서 안 되면? — <em>해설: "주체가 달라서"는 원인 후보 중 하나다 — 먼저 실행 프로세스·작업 폴더·정확한 파일 경로·오류 원문·권한을 대조한다. 나머지가 전부 같을 때만 TCC·샌드박스 층으로 좁힌다.</em></li>
+<li>최소 권한이 왜 기본인가? — <em>해설: 넓은 권한은 사고의 반경을 키운다. 열 때 "이 주체에게 이 동작만"으로 정의한다.</em></li>
+</ol>
+<hr />
+<h2>6. 컨텍스트·토큰·신뢰 경계 — 규칙은 왜 잊히나</h2>
+<p><strong>사건</strong>: 긴 대화에서 모델이 규칙을 잊어서, 매 턴 규칙을 다시 넣는 훅을 썼다.</p>
+<p><strong>비유</strong>: 책상 위 서류 더미. 책상 크기(컨텍스트 창)는 정해져 있고, 새 서류가 쌓이면 처음 깔린 서류는 아래로 밀려 잘 안 보인다. 매 회의 시작에 규칙을 다시 낭독하는 게 재주입이다 — 낭독은 듣는 확률을 올리지, 준수를 보장하지 않는다.</p>
+<p><strong>실제 작동</strong>: 모델은 매번 컨텍스트 창 안의 토큰만 읽는다. 대화가 길어지면 초반 규칙이 밀려나거나, 창 안에 있어도 무시당할 수 있다 — 이 열화를 <strong>컨텍스트 열화(context rot)</strong> 라 한다. 대응은 세 갈래다: 필요한 것만 넣는 <strong>맥락 선별</strong>, 쌓인 것을 줄이는 <strong>압축(compaction)</strong>, 창 밖 파일에 두고 필요할 때 다시 읽는 <strong>외부 노트</strong>. <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents">Anthropic의 컨텍스트 엔지니어링 글</a>(A03)이 이 구분을 정리한다. 단, 압축은 손실이 있고 재주입은 확률을 올릴 뿐이다.</p>
+<p><strong>신뢰 경계(trust boundary)</strong>: 창 안에 들어온 모든 것이 같은 권한을 갖지 않는다. 네가 쓴 지시는 명령이고, 파일·웹·도구 결과는 <strong>데이터</strong>다. 읽은 문서 안에 "이전 지시를 무시하라"가 있어도 그건 데이터일 뿐이다 — 이게 <strong>프롬프트 인젝션(prompt injection)</strong> 이다. 말로 하는 금지는 모델의 선택에 맡기는 것이고, 그래서 도구 권한·허용 목록 같은 <strong>기계적 경계</strong>를 둔다. 단, 기계 경계도 무조건 보장이 아니다 — deny 목록은 보통 명령의 <em>모양</em>만 검사하므로 옵션 순서 바꾸기·다른 도구로 감싸기·경계가 미치지 않는 경로는 지나갈 수 있다. 기계 경계는 그 구현·권한 설정·실제로 시험한 입력 범위 안에서만 차단한다. 시험하지 않은 우회 경로까지 막았다고 주장하면 안 된다.</p>
+<p><strong>용어</strong>: 토큰(token — 모델이 읽는 문자 조각), 컨텍스트 창, 컨텍스트 열화, 압축, 재주입, 프롬프트 인젝션, 신뢰 경계.</p>
+<p><strong>작은 예</strong>:</p>
+<pre><code>턴 1:  &quot;비밀값은 출력 금지&quot; (규칙)
+턴 40: 사용자가 긴 문서를 붙여 넣음 → 창이 밀려 규칙 무시됨
+훅:   매 턴 규칙 블록을 재삽입 → 지킬 확률 상승
+한계:  재삽입해도 모델이 따른다는 보장은 없음 → 출력 검증·도구 deny가 더 강한 경계
+      (단, deny도 시험된 명령 형태 안에서만 차단 — 우회 경로는 별도 시험 필요)
+</code></pre>
+<p><strong>반례</strong>: "규칙을 매 턴 넣으면 완전히 지킨다" — 아니다. 말로 하는 규칙은 제안일 뿐이다. "기계 경계를 두면 완전히 막힌다"도 아니다 — 기계 경계는 검증된 형태와 경로 안에서만 차단하고, 우회 경로는 그 경계의 측정 범위를 넘어서면 잡지 못한다. 둘의 차이는 확률 vs <strong>조건부 차단</strong>이다 — 완전 보장은 어느 쪽도 아니다. "압축하면 기억이 유지된다" — 요약은 손실이다. 무엇이 버려졌는지는 압축본에 안 남는다.</p>
+<p><strong>스스로 확인</strong>:</p>
+<ol>
+<li>규칙을 모델에 말로 시키는 것과 도구가 막는 것의 차이는? — <em>해설: 전자는 확률, 후자는 조건부 차단. 중요한 금지는 기계 층에 두되, 그 층이 실제로 막는 범위를 시험으로 확인한다 — 확인 못 한 우회 경로는 막힌 게 아니다.</em></li>
+<li>파일 내용을 읽은 모델이 그 안의 "지시"를 따르면? — <em>해설: 신뢰 경계를 넘은 것. 데이터와 명령의 출처를 모델이 섞지 않게 경계를 설계한다.</em></li>
+</ol>
+<hr />
+<h2>AI 원리 다섯 개</h2>
+<p>위 여섯 사건은 사람·시스템 쪽 원리다. 여기부터는 에이전트 쪽에서 헷갈리기 쉬운 다섯 개를 짧게 잡는다.</p>
+<h3>A. 생성과 검색·도구는 다른 종류의 답이다</h3>
+<p>모델이 만들어 낸 문장(생성)과 자료에서 가져온 문장(검색 결과)·도구가 돌려준 값은 출처가 다르다. 생성은 그럴듯하지만 틀릴 수 있고(<strong>환각, hallucination</strong>), 검색·도구 결과는 실제 근거지만 역시 <strong>데이터</strong>일 뿐 명령이 아니다. 답에 근거를 붙이는 것을 근거 연결(grounding)이라 한다. 시험할 때도 "말이 그럴듯한가"와 "근거가 있는가"를 나눠 본다.</p>
+<h3>B. workflow와 agent를 구분한다</h3>
+<p><strong>workflow</strong>는 다음 단계를 사람이 미리 정한 고정 절차, <strong>agent</strong>는 다음 행동과 멈출 시점을 모델이 고르는 구조다. <a href="https://www.anthropic.com/engineering/building-effective-agents">Anthropic</a>(A01)은 "단순한 구조부터 시작해 필요할 때만 복잡하게"를, <a href="https://cdn.openai.com/business-guides-and-resources/a-practical-guide-to-building-agents.pdf">OpenAI 안내</a>(A02)는 "단일 에이전트부터 확장"과 "종료 조건"을 강조한다. 대회에서 흔한 실수는 필요도 없이 agent로 만들어 예측 불가능해지는 것 — 고정 절차로 되면 workflow로 둔다.</p>
+<h3>C. retrieval·top-k·청킹 — 붙이는 자료가 답을 정한다</h3>
+<p>RAG(검색 증강 생성, <a href="https://arxiv.org/abs/2005.11401">원 논문 초록</a>, A06)는 "자료를 먼저 찾아 붙이고 답하게" 하는 구조다. 자료를 잘라 둔 조각이 <strong>청크(chunk)</strong>, 질문과 가까운 순으로 꺼내는 개수가 <strong>top-k</strong>다. 실패를 진단할 때는 둘을 나눈다 — 필요한 조각이 안 올라온 <strong>검색 누락</strong>과, 조각이 올라왔는데 모델이 잘못 쓴 <strong>생성 오류</strong>. 어느 쪽이 더 답을 좌우하는지는 사례마다 다르니 일반화하지 말고, 실패한 답마다 "올라온 조각"과 "만들어진 문장"을 대조해 어느 층인지 판별한다.</p>
+<h3>D. 구조화 출력과 의미 검증은 두 층이다</h3>
+<p>출력을 정해진 형식(JSON 스키마)으로만 내리게 하는 게 <strong>구조화 출력</strong>이다. <a href="https://json-schema.org/understanding-json-schema/reference/object">JSON Schema 문서</a>(A08)의 필수 필드·타입 검사는 <strong>형식</strong>을 본다 — 형식이 맞아도 내용이 거짓일 수 있다. 그래서 검증은 늘 둘이다: 형식 검증(스키마 통과)과 의미 검증(근거와 대조). <a href="https://modelcontextprotocol.io/specification/2025-06-18/server/tools">MCP 도구 명세</a>(A07)의 입출력 계약·오류 구분이 도구 설계의 참조다.</p>
+<h3>E. 평가와 판정자의 편향</h3>
+<p>정답 없는 문제의 품질은 <strong>시험 사례 + 미리 정한 기준(rubric)</strong> 으로 잰다(<a href="https://hamel.dev/blog/posts/evals/">Hamel Husain의 evals 글</a>, A04). 실패한 사례에서 시험을 만들어 쌓는 게 정석이고, 판정자로 LLM을 쓰면(LLM-as-judge) 편향이 있다 — 긴 답·자기가 만든 답·앞에 나온 답을 선호하는 식. 그래서 <strong>생성자와 판정자를 분리</strong>하고, 판정 결과 샘플은 사람이 직접 대조한다. 네가 쓰는 책임자-워커-독립검토 분리가 바로 이 원리의 운영판이다.</p>
+<hr />
+<h2>이건 같지 않다 — 구분표</h2>
+<table>
+<thead>
+<tr>
+<th>A</th>
+<th>B</th>
+<th>한 줄 차이</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>감사 로그(audit log)</td>
+<td>이벤트 소싱(event sourcing)</td>
+<td>전자는 "일어난 일의 기록". 후자는 기록 자체가 상태의 원천 — 기록을 다시 재생해 상태를 만든다. 로그가 있다고 소싱 구조는 아니다</td>
+</tr>
+<tr>
+<td>증거(evidence)</td>
+<td>진실 보장</td>
+<td>증거는 "누가 뭘 남겼나"일 뿐 그 내용이 참이라는 뜻이 아니다. 영수증이 있어도 내용은 검증해야 한다</td>
+</tr>
+<tr>
+<td>체크포인트(checkpoint)</td>
+<td>트랜잭션(transaction)</td>
+<td>전자는 중간 상태 보관. 후자는 "전부 되거나 전부 안 되거나"의 경계. 저장해 뒀다고 원자성이 생기지 않는다</td>
+</tr>
+<tr>
+<td>규칙 재주입</td>
+<td>완전한 준수</td>
+<td>다시 보여주는 것은 확률을 올릴 뿐이다. 기계적 경계(deny·권한)는 더 강하지만 그 구현·측정 범위 안에서만 차단한다 — 둘 다 "완전 보장"은 아니다</td>
+</tr>
+<tr>
+<td>at-least-once(D≥1) + 멱등 수신(E 억제)</td>
+<td>exactly-once 외부 효과</td>
+<td>도달 보장과 효과 보장은 다른 축. 메시지 구조로 외부 송신의 "정확히 한 번"을 보장할 수 없다. 가능한 주장은 "중복을 걸러 결과적으로 한 번의 효과"까지</td>
+</tr>
+<tr>
+<td>모의 어댑터 통과</td>
+<td>실제 연결 입증</td>
+<td>오프라인 합격은 오프라인의 증거다. 실제 모델·카카오·대회 수용은 각각 별도 증거가 필요하다</td>
+</tr>
+</tbody>
+</table>
+<h2>용어 다리 — 블로그 이름 ↔ 이 문서에서 배운 것</h2>
+<p><code>ref/arch-terms.txt</code>의 용어와의 연결만 간단히 남긴다(전체 복사가 아니라 등장한 것만).</p>
+<table>
+<thead>
+<tr>
+<th>업계 이름</th>
+<th>이 문서의 자리</th>
+<th>네 구조에서의 대응물</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>경쟁 조건·원자성</td>
+<td>1장</td>
+<td>자동 승인기 7차 BLOCK</td>
+</tr>
+<tr>
+<td>멱등성·영속화·재개 가능성</td>
+<td>2장</td>
+<td>답 중복 전송, 전달 ID</td>
+</tr>
+<tr>
+<td>체크포인트·상태 영속화</td>
+<td>2장·구분표</td>
+<td>md로 세션 재개</td>
+</tr>
+<tr>
+<td>설정 우선순위(유효 설정)</td>
+<td>3장</td>
+<td>채널 설정이 전역을 덮음</td>
+</tr>
+<tr>
+<td>timeout·retry·backoff·멱등 메서드</td>
+<td>4장</td>
+<td>502·DNS 실패</td>
+</tr>
+<tr>
+<td>최소 권한·샌드박스</td>
+<td>5장</td>
+<td>macOS 권한 실패</td>
+</tr>
+<tr>
+<td>컨텍스트 엔지니어링·열화·인젝션·신뢰 경계</td>
+<td>6장</td>
+<td>매 턴 규칙 재주입 훅</td>
+</tr>
+<tr>
+<td>workflow·agent·종료 조건</td>
+<td>B</td>
+<td>작게 도는 에이전트 정의</td>
+</tr>
+<tr>
+<td>RAG·청킹·top-k·근거 연결</td>
+<td>C</td>
+<td>자료 붙이기</td>
+</tr>
+<tr>
+<td>구조화 출력·스키마</td>
+<td>D</td>
+<td>요청/응답 계약</td>
+</tr>
+<tr>
+<td>평가·rubric·LLM 판정자·생성자-검증자 분리</td>
+<td>E</td>
+<td>시험표와 독립 검토</td>
+</tr>
+<tr>
+<td>감사 로그·이벤트 소싱·출처 추적</td>
+<td>구분표</td>
+<td>분산원장·영수증</td>
+</tr>
+</tbody>
+</table>
+<p>블로그에서 아직 여기 안 나온 용어(오케스트레이터-워커, 라우팅, 팬아웃/팬인, 게이트·가드레일 등)는 <a href="03-next.html">11월 이후 과정</a>의 운영 단원에서 다시 만난다.</p></body></html>

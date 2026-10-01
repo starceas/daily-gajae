@@ -1,0 +1,3 @@
+{"id": "t09", "category": "중복", "input": "몇 시까지 영업해요?", "send_twice": true,
+ "expect": {"status": ["ok"], "must_contain": ["15:00"], "forbidden": [], "evidence": ["hours.txt"], "notes_contain": [], "duplicate_second": true},
+ "rationale": "같은 request_id가 두 번 오면 재처리가 아니라 첫 응답을 재사용하고 duplicate를 표시해야 한다(멱등성)."}

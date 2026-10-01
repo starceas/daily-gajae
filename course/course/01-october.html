@@ -1,0 +1,334 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>10월 과정: 예선까지 혼자 도는 능력 · AI 엔지니어링 학습 과정</title><style>
+:root{color-scheme:light dark}
+body{max-width:720px;margin:0 auto;padding:32px 20px 80px;font:17px/1.75 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;color:#222;background:#fbfaf7}
+@media (prefers-color-scheme:dark){body{color:#ddd;background:#16161a}a{color:#8ab4f8}code{background:#2a2a30}}
+a{color:#b4442c;text-decoration:none}a:hover{text-decoration:underline}
+h1{font-size:1.6em;line-height:1.35;margin:.2em 0 .4em}h2{font-size:1.15em;margin:1.8em 0 .4em}
+code{background:#efece6;padding:1px 5px;border-radius:4px;font-size:.9em}
+ul{padding-left:1.2em}li{margin:.25em 0}
+.meta{color:#888;font-size:.9em}.nav{margin-bottom:28px;font-size:.95em}
+.list a{display:block;padding:10px 0;border-bottom:1px solid #8883}
+.list .d{color:#888;font-size:.85em;margin-right:10px}
+
+table{border-collapse:collapse;width:100%;font-size:.92em;margin:1em 0;display:block;overflow-x:auto}
+th,td{border:1px solid #8885;padding:6px 8px;vertical-align:top}
+pre{background:#efece6;padding:12px;border-radius:6px;overflow-x:auto;font-size:.88em;line-height:1.5}
+pre code{background:none;padding:0}
+@media (prefers-color-scheme:dark){pre{background:#2a2a30}}
+</style></head>
+<body><div class="nav"><a href="../index.html">← AI 엔지니어링 학습 과정</a> · <a href="../../">가재 일기</a></div><h1>10월 과정: 예선까지 혼자 도는 능력</h1>
+<p>목표는 10/31 예선 형식에 맞춰 <strong>모르는 인물을 인터뷰하고 → 요구를 계약으로 닫고 → 기존 대화형 AI CLI 한 세션에 구현을 시키고 → 미리 고정한 시험으로 검증하고 → 실패 원인을 좁혀 고치는</strong> 전 과정을 혼자 반복하는 것이다. 코딩 문법은 배우지 않는다. 코드는 AI가 쓰고, 네가 묻고·실행하고·판별한다.</p>
+<p>이 파일의 대회 관련 주장은 <code>사용자 제공</code> / <code>공개 1차 자료 확인</code> / <code>미확인</code> 중 하나로 표시한다. 연습 시간표·모의전 제한시간은 모두 <strong>교육 설정</strong>이며 공식 규정이 아니다.</p>
+<h2>대회 사실 정리</h2>
+<p>확인일 2026-10-01. 공개 확인의 출처는 <a href="https://aitop100.org/">AI_TOP_100 공식 홈페이지</a>(C01, <a href="../research/SOURCES.html">출처 원장</a>)다. 페이지 내용은 바뀔 수 있으니 대회 전 다시 연다.</p>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>내용</th>
+<th>표시</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>예선 일시</td>
+<td>2026-10-31(토) 10:00~15:00, 5시간</td>
+<td>공개 1차 자료 확인</td>
+</tr>
+<tr>
+<td>참가 방식</td>
+<td>전 과정 개인전, 본인 수행</td>
+<td>공개 1차 자료 확인</td>
+</tr>
+<tr>
+<td>과제 흐름</td>
+<td>가상 인물 인터뷰 → AI 에이전트 제작·제출 → 내부 기준 심사</td>
+<td>공개 1차 자료 확인</td>
+</tr>
+<tr>
+<td>도구</td>
+<td>FAQ는 AI 도구·서비스에 별도 제한이 없다고 안내</td>
+<td>공개 1차 자료 확인. 단, 타인 도움·계정 공유·모든 외부 송신 허용을 뜻하지 않음</td>
+</tr>
+<tr>
+<td>카카오</td>
+<td>참가에 카카오 계정 로그인·톡 계정 연동 필수</td>
+<td>공개 1차 자료 확인</td>
+</tr>
+<tr>
+<td>제작물의 카카오 연결 방식</td>
+<td>참가자가 채널 챗봇·메시지 API 등을 직접 구축해야 하는지</td>
+<td><strong>미확인</strong></td>
+</tr>
+<tr>
+<td>제출 형식</td>
+<td>파일/URL/API·스키마·호스팅·심사 접근 조건</td>
+<td><strong>미확인</strong></td>
+</tr>
+<tr>
+<td>상세 규정</td>
+<td>대회 전 이메일로 규정 안내 예고</td>
+<td><strong>미확인</strong>(예고 사실만 확인)</td>
+</tr>
+<tr>
+<td>기타 조건</td>
+<td>공용 네트워크 원칙적 금지, 환경 인증 사진 필수</td>
+<td>공개 1차 자료 확인</td>
+</tr>
+<tr>
+<td>후속 일정</td>
+<td>심사 10/31~11/3, 결과 11/4, 본선 11/21</td>
+<td>공개 1차 자료 확인</td>
+</tr>
+<tr>
+<td>접수 상태</td>
+<td>상단 "접수 마감" 표시와 하단 "예정 마감 10/21 18:00"이 병존</td>
+<td><strong>미확인(상충)</strong> — 참가 가능으로 단정하지 않는다</td>
+</tr>
+<tr>
+<td>참가 등록 여부·개인 수신 메일</td>
+<td>조사 범위 밖</td>
+<td><strong>미확인</strong> — 네가 직접 확인할 것</td>
+</tr>
+</tbody>
+</table>
+<p>규정 이메일이 오거나 홈페이지가 갱신되면 위 표의 <code>미확인</code> 칸을 직접 채운다. 제출 형식·연결 방식이 닫히기 전에는 <strong>모의 제출까지가 이번 과정의 목표</strong>이며 "대회 제출 가능"으로 판정하지 않는다.</p>
+<h2>두 갈래 경로</h2>
+<p><strong>최소 완주 경로</strong> — 어떤 일이 있어도 이것만은 끝낸다: 인터뷰 1회 → 요구 계약 1개 → 오프라인 또는 기존 CLI로 도는 최소 에이전트 1개 → 고정 시험표 1개 → 모의 제출 묶음 → 모의전 3회.</p>
+<p><strong>확장 경로</strong> — 최소 경로가 돌 때만 추가한다: 실제 모델의 도구 호출 시험(승인된 기존 구독 CLI로), 카카오 로컬 모의 어댑터, 장애 주입 재현, 콜백·응답 기한 모형.</p>
+<h2>준비표 (10/01~10/30, 일정은 교육 제안)</h2>
+<table>
+<thead>
+<tr>
+<th>기간</th>
+<th>할 일</th>
+<th>산출물</th>
+<th>막힘 분기</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>10/01~10/04</td>
+<td>README 첫 90분 → <a href="../labs/01-interview.html">인터뷰 실습</a> → <a href="../labs/02-build.html">제작 실습</a> → <a href="../labs/03-evaluate.html">평가 실습</a></td>
+<td>인터뷰 기록, 요구 계약, 돌아가는 최소 결과물, 시험표(P/N·B)</td>
+<td>CLI 로그인·할당량 문제면 오프라인 fixture 대조부터. 승인 안 된 경로로 바꾸지 않는다</td>
+</tr>
+<tr>
+<td>10/05~10/11</td>
+<td><a href="02-principles.html">원리 교재</a> 사건 6개를 하루 1개씩 + <a href="../labs/04-failures.html">장애 재현 실습</a></td>
+<td>사건 순서 그림 6개, 재현 기록</td>
+<td>재현이 안 되면 "왜 재현이 안 되나" 자체를 기록에 남긴다</td>
+</tr>
+<tr>
+<td>10/12</td>
+<td><strong>모의전 1</strong> — <a href="../labs/06-mock-exams.html">모의전 실습</a>, 교육 설정 90분</td>
+<td>모의 제출 묶음 1호</td>
+<td>시간 부족하면 중간 상태를 기록하고 "미완성 제출"로 평가한다</td>
+</tr>
+<tr>
+<td>10/13~10/18</td>
+<td>모의전 1 실패분 복습 + <a href="../labs/05-kakao.html">카카오 실습</a>의 로컬 모의 + <a href="../templates/channel-contract.html">연결 계약</a> 작성</td>
+<td>채워진 연결 계약, 로컬 모의 응답 증거</td>
+<td>계정·권한·비용이 막히면 오프라인 모의로 닫고 미확인 명시</td>
+</tr>
+<tr>
+<td>10/19</td>
+<td><strong>모의전 2</strong> — 새 인물·새 자료, 교육 설정 120분</td>
+<td>모의 제출 묶음 2호</td>
+<td>같은 인물·같은 답 재사용 금지</td>
+</tr>
+<tr>
+<td>10/20~10/25</td>
+<td><a href="../templates/submission-checklist.html">제출 대조표</a> 연습으로 끝까지 채우기 + C01 재확인 + 필요하면 <a href="03-next.html">11월 이후 과정</a> 미리 읽기</td>
+<td>빈칸 없는 모의 제출 묶음, 규정 재확인 기록</td>
+<td>규정 갱신이 있으면 표를 새로 고친다</td>
+</tr>
+<tr>
+<td>10/26</td>
+<td><strong>모의전 3</strong> — 교육 설정 150분</td>
+<td>모의 제출 묶음 3호</td>
+<td>—</td>
+</tr>
+<tr>
+<td>10/27~10/30</td>
+<td>모의 묶음 최종 대조, 규정 이메일 확인, 환경 인증 사진·카카오 계정 준비 항목 정리(실행은 네가 직접), 충분한 휴식</td>
+<td>대회 전 확인표</td>
+<td>이 교재의 기본 경로는 새 계정·키·결제 없이 완주된다. 필요해지면 승인·조건 확인 후 별도 작업이며, 이 과정이 그런 경로를 만들지는 않는다</td>
+</tr>
+<tr>
+<td>10/31</td>
+<td>본 대회 10:00~15:00 (공식, 5시간)</td>
+<td>—</td>
+<td>공용 네트워크 회피 환경은 미리 마련</td>
+</tr>
+</tbody>
+</table>
+<p>각 1차 자료에서 어디를 읽고 손으로 뭘 할지는 <a href="../research/LEARNING-MAP.html">학습 지도</a> §1·§3이 자료별로 정해 둔다 — 읽기 전에 그 표를 먼저 본다.</p>
+<h2>인물 인터뷰 하는 법</h2>
+<p>인터뷰는 "뭘 만들어 드릴까"를 묻는 자리가 아니다. 그 사람의 최근 실제 작업 하나를 끝까지 따라가는 자리다.</p>
+<ol>
+<li><strong>사건부터</strong>: "최근에 이 일을 실제로 한 순서가 어떻게 돼?" — 일반론이 나오면 "가장 최근 한 건만"으로 좁힌다.</li>
+<li><strong>성공의 눈</strong>: "성공인지 무엇을 보면 알아?" — 그 답이 나중에 시험의 기대값이 된다.</li>
+<li><strong>비용과 예외</strong>: "잘못됐을 때 가장 큰 비용은?", "자동으로 하면 안 되는 행동은?" — 금지 행동과 승인 경계가 여기서 나온다.</li>
+<li><strong>모르는 것 남기기</strong>: 답을 못 들은 항목은 지우지 말고 <code>미확인</code>으로 적는다. 인물이 안 말한 것을 말한 것처럼 쓰면 그때부터 구현이 아니라 소설이다.</li>
+<li><strong>되읽어 확인</strong>: "내가 이해한 목표는 <strong><em>, 가장 중요한 예외는 </em></strong>, 자동으로 하지 않을 행동은 ___다. 맞나?" — 틀린 채로 닫지 않는다.</li>
+</ol>
+<p>기록은 <a href="../templates/interview.html">인터뷰 양식</a>을 쓰고, 산출물은 <strong>성공조건 3개·모르는 것·피할 행동·시간 제한</strong> 네 묶음이다. 이 네 개가 <a href="../templates/requirements.html">요구 계약</a>의 뼈대가 된다.</p>
+<p><strong>가상 인물과 연습할 때</strong>: <a href="../labs/01-interview.html">인터뷰 실습</a>의 persona 파일은 인터뷰 전에 네가 먼저 읽지 않는다. 답을 알고 묻는 인터뷰는 시험이 아니라 독해다. 파일을 대화형 CLI에 읽히고, 네 질문에 대해 인물 역할로 답하게 한다.</p>
+<p><strong>분류 규칙</strong> — 인터뷰와 자료에서 나온 모든 문장을 셋 중 하나로 표시한다: <code>사실</code>(인물이 말했거나 자료에 있는 것), <code>가정</code>(네가 채운 해석), <code>미확인</code>(아직 묻거나 확인하지 못한 것). 가정과 미확인은 요구 계약의 "가정과 미확인" 표로 옮긴다.</p>
+<h2>작게 도는 에이전트의 정의</h2>
+<p>10월에 만드는 에이전트는 이 경로 하나다:</p>
+<pre><code>입력 → 자료 읽기 또는 도구 호출 → 판단 → 출력 형식 검증 → 응답 → 상태 기록
+</code></pre>
+<ul>
+<li><strong>작다</strong>의 뜻: 성공조건 3개 중 하나를 만족하는 최소 경로. 기능 목록이 아니다.</li>
+<li><strong>돌았다</strong>의 뜻: 정한 입력을 넣었을 때 기대 형식의 출력 파일이 나온 것. "코드가 생겼다"는 돌았다가 아니다.</li>
+<li><strong>모의와 실제 구분</strong>: 규칙으로 답을 고르는 오프라인 도구가 돌아도 그것은 모의다. 실제 모델을 쓴 경로, 카카오 네이티브 경로와 섞어 보고하지 않는다(뒤의 증거 분리 참조).</li>
+</ul>
+<h3>계약 예제: 요청·도구·검증·응답·상태</h3>
+<p>대화형 요청이 들어온다고 가정한 최소 계약(형식은 <a href="https://kakaobusiness.gitbook.io/main/tool/chatbot/skill_guide/make_skill">카카오 스킬 문서</a>(K06)류를 본뜬 학습용이다).</p>
+<p>요청(서버가 받는 것):</p>
+<pre><code class="language-json">{
+  &quot;requestId&quot;: &quot;req-042&quot;,
+  &quot;userRequest&quot;: { &quot;user&quot;: { &quot;id&quot;: &quot;u-1&quot; }, &quot;utterance&quot;: &quot;어제 회의 메모 어디 있지?&quot; }
+}
+</code></pre>
+<p>응답(서버가 돌려주는 것, 형식 예):</p>
+<pre><code class="language-json">{
+  &quot;version&quot;: &quot;2.0&quot;,
+  &quot;template&quot;: { &quot;outputs&quot;: [ { &quot;simpleText&quot;: { &quot;text&quot;: &quot;notes/ 폴더의 10-01 회의 메모를 찾았어. 근거: f-12&quot; } } ] }
+}
+</code></pre>
+<ul>
+<li><strong>도구 계약</strong>: 도구마다 이름·입력·출력·실패 시 오류 형식을 정한다. "프로토콜이 깨졌다"(요청 형식 자체가 잘못됨)와 "도구가 실패했다"(형식은 맞지만 실행 실패)를 구분해 응답한다 — <a href="https://modelcontextprotocol.io/specification/2025-06-18/server/tools">MCP 도구 명세</a>(A07)가 구분하는 두 오류다.</li>
+<li><strong>검증은 두 층</strong>: 출력이 정해진 형식에 맞는가(형식 검증) + 내용이 자료 근거에 맞는가(의미 검증). 형식 통과가 정답을 뜻하지 않는다 — <a href="https://json-schema.org/understanding-json-schema/reference/object">JSON Schema 문서</a>(A08)가 다루는 건 형식뿐이다.</li>
+<li><strong>상태 기록</strong>: 요청 ID, 처리 단계, 마지막 오류를 <code>state.json</code> 같은 파일에 남긴다. 세션이 끊겨도 "어디까지 했나"를 다시 읽을 수 있게 — 이미 네가 쓰는 체크포인트 구조다.</li>
+<li><strong>오류 응답 계약</strong>: 자료 없음 / 자료 충돌 / 도구 실패 세 경우의 응답 문구를 미리 정한다. 모르면 모른다고 답하는 응답도 설계다.</li>
+</ul>
+<h2>평가표 고정과 실패 고치는 순서</h2>
+<p>평가 규칙은 실행 전에 닫는다. 양식은 <a href="../templates/eval-sheet.html">시험표</a>.</p>
+<ul>
+<li><strong>N 고정</strong>: 필수 시험 수를 실행 전에 정한다. <code>N = P + F + U</code>(통과 + 실패 + 미실행·판정 불가). 미실행 U도 분모에 들어가며, 빼서 분모를 줄이지 않는다. N=0이면 판정 불가다.</li>
+<li><strong>P/N 기록</strong>: 통과 P를 사전 고정 N으로 나눈다. 미실행은 통과가 아니고 분모에서도 빼지 않는다.</li>
+<li><strong>B=0</strong>: 핵심 경계 위반(근거 없는 사실 확정, 금지 행동·송신, 비밀 노출 등 시작 전 정한 것)이 하나라도 있으면 불합격.</li>
+<li><strong>개발용과 확인용 분리</strong>: 고치면서 본 시험과 마지막 판정에 쓸 손대지 않은 시험을 나눈다. 확인용 답을 열어 구현을 고쳤으면 그 문제는 개발용으로 내리고 새 확인용을 확보한다.</li>
+<li><strong>합격</strong>: P=N, B=0, 미확인 항목의 정확한 명시. 대회 점수를 예측하는 가중치는 만들지 않는다 — 근거가 없다.</li>
+<li><strong>관찰과 제작물을 나눈다</strong>: 실험·재현·비교 과제는 관찰(N_obs를 사전 고정, 완료는 실행 뒤 C_obs=N_obs일 때)로, 만든 결과물의 합격은 제작물 시험(N_prod=P_prod+F_prod+U_prod&gt;0)으로 별도 기록한다. 관찰 과제의 완료를 제작물 합격으로 세지 않는다.</li>
+<li><strong>기대값 변경 금지</strong>: 기대값을 바꾸면 새 시험표 버전으로 다시 평가한다. 작성자가 자기 답에 맞춰 채점표를 고치는 것이 평가 실패의 가장 흔한 형태다.</li>
+</ul>
+<p>실패했을 때 순서:</p>
+<ol>
+<li><strong>재현</strong>: 같은 입력을 다시 넣어 같은 실패를 본다. 재현 안 되면 "언제 되고 언제 안 되나"가 첫 질문.</li>
+<li><strong>층 좁히기</strong>: 실패가 입력·자료·도구·모델·상태·환경 중 어디서 나왔는지 후보를 적는다. "AI가 잘못했다"는 층이 아니다.</li>
+<li><strong>가설 하나</strong>: 후보 하나만 고르고, 그 후보와 다른 후보를 가를 최소 시험 하나를 정한다.</li>
+<li><strong>최소 수정</strong>: 그 원인만 고친다. 다른 기능, 다른 파일, 시험의 N을 같이 건드리지 않는다.</li>
+<li><strong>같은 시험 재실행</strong>: 전과 후 출력을 나란히 남긴다. "고쳤다"는 말이 아니라 전후 비교가 증거다.</li>
+</ol>
+<h2>카카오: 다섯 경로와 증거 분리</h2>
+<p>카카오 관련 기능은 서로 대체가 안 되는 다섯 경로다. 하나의 성공을 다른 경로의 증거로 쓰지 않는다. 근거는 <a href="../research/FINDINGS.html">조사 판정</a>과 각 문서다.</p>
+<table>
+<thead>
+<tr>
+<th>경로</th>
+<th>되는 일</th>
+<th>실제 연결 조건</th>
+<th>오프라인 대안</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://developers.kakao.com/docs/ko/kakaologin/common">카카오 로그인</a>(K01)</td>
+<td>사용자 인증과 동의 범위의 접근 토큰</td>
+<td>개발자 앱, 로그인 설정, 리다이렉트</td>
+<td>가상 인증 상태표. 로그인 성공은 대화 수신 성공이 아니다</td>
+</tr>
+<tr>
+<td><a href="https://developers.kakao.com/docs/ko/kakaotalk-message/rest-api">나에게 메시지</a>(K03)</td>
+<td>본인의 나와의 채팅으로 발송</td>
+<td>앱·로그인·액세스 토큰·<code>talk_message</code> 동의·템플릿</td>
+<td>본인 대상 가상 발송함. 타인 수신·수신 기능 미입증</td>
+</tr>
+<tr>
+<td><a href="https://developers.kakao.com/docs/ko/tutorial/message">친구 메시지</a>(K04)</td>
+<td>같은 서비스 친구를 골라 발송</td>
+<td>양측 친구 관계·앱 연결·동의. 심사 전 일 30건·한 번에 5명, 추가 기능 신청·심사 소요기간 미확인</td>
+<td>관계·동의 조합 시험표. 임의 사용자 자동 안내 경로가 아니다</td>
+</tr>
+<tr>
+<td><a href="https://kakaobusiness.gitbook.io/main/tool/chatbot/tutorial/make_chatbot/tutorial_1">채널 챗봇</a>(K05)</td>
+<td>채널 발화를 블록/스킬로 처리·응답</td>
+<td>봇 마스터 = 채널 매니저 이상, 연결 앱 있으면 EDITOR 이상. 기존 봇·메뉴와 충돌 가능</td>
+<td>가상 발화 JSON → 응답 JSON 대조</td>
+</tr>
+<tr>
+<td>비공식 개인계정 자동화</td>
+<td>개인 메신저 화면·통신 조작</td>
+<td>공식 문서에서 지원 경로로 확인 안 됨</td>
+<td>채택하지 않는다. 허용·안정성·대회 인정 모두 미확인</td>
+</tr>
+</tbody>
+</table>
+<p>연동 요건과 시간 제약(조사 확인분):</p>
+<ul>
+<li><strong>스킬 서버 접근</strong>: 외부 처리를 쓰면 공인 IP 또는 공중망 도메인이 필요하다. localhost에서 잘 돈 것은 카카오가 접근할 수 있다는 증거가 아니다. <a href="https://kakaobusiness.gitbook.io/main/tool/chatbot/skill_guide/make_skill">K06</a></li>
+<li><strong>응답 기한</strong>: 일반 스킬 응답 안내는 5초. 콜백 방식은 최초 응답에 <code>useCallback: true</code> 후 일회성 URL로 후속 응답. 단, 콜백 유효시간은 같은 문서 안에서 개요 5분 vs 오류 표 1분으로 <strong>상충 — 미확인</strong>으로 둔다. <a href="https://kakaobusiness.gitbook.io/main/tool/chatbot/skill_guide/ai_chatbot_callback_guide">K07</a></li>
+<li><strong>시간 예산 분해</strong>: <code>응답시간 = 통신 + 대기 + 모델 처리 + 응답 조립</code>. 모의에서는 교육 설정 예산(예: 4초)을 정해 넘는 사례를 따로 표시한다. 4초는 학습 설정, 5초는 문서 값 — 섞지 않는다.</li>
+<li><strong>봇테스트 ≠ 실수신</strong>: 봇테스트 통과는 실제 채널 수신의 증거가 아니다. 승인 필수 여부·처리기간도 현재 문서로 미확인.</li>
+</ul>
+<p><strong>연결 진행 게이트</strong>: 실제 연결은 <code>G = R ∧ A ∧ Q ∧ E</code>가 모두 <code>확인</code>일 때만 한다 — R(공식 요구 방식 확인), A(그 행위에 대한 사용자 승인), Q(계정·권한·비용·제공량 확인), E(시험 환경과 증거 수집 방법). 하나라도 미확인·부정이면 <strong>오프라인 모의 단계로 종료</strong>한다. 현재 R은 미확인이고 송신·설정 행위는 미승인이므로 이 제작 과업에서는 실제 연결을 진행하지 않는다.</p>
+<p><strong>증거는 다섯 칸으로</strong>: <code>D</code>=문서 확인, <code>O</code>=오프라인 모의 통과, <code>M</code>=실제 모델 사용, <code>K</code>=카카오 네이티브 왕복, <code>J</code>=대회 요건 수용. <code>O=통과</code>에서 <code>M/K/J=통과</code>를 추론하지 않는다. 기록은 <a href="../templates/channel-contract.html">연결 계약</a>의 네 층 표에 남긴다.</p>
+<p><strong>실제 연결 전의 별도 체크 두 개</strong>: (1) 모의 입출력 합격 — 로컬 fixture → 어댑터 → 응답 형식 대조가 P=N. (2) 제출 요건 충족 — 공개된 제출 형식과 결과물의 대조. 이 둘은 다른 시험이고 둘 다 남겨야 한다.</p>
+<h2>모의전 3회 (학습 설정)</h2>
+<table>
+<thead>
+<tr>
+<th>회차</th>
+<th>날짜</th>
+<th>교육 설정 시간</th>
+<th>규칙</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>10/12</td>
+<td>90분</td>
+<td>인터뷰 → 요구 계약 → 최소 구현 → 고정 시험 → 모의 묶음</td>
+</tr>
+<tr>
+<td>2</td>
+<td>10/19</td>
+<td>120분</td>
+<td>새 인물·새 자료. 카카오 로컬 모의 경계까지 포함</td>
+</tr>
+<tr>
+<td>3</td>
+<td>10/26</td>
+<td>150분</td>
+<td>실패 복구와 미확인 처리까지 묶음 완성</td>
+</tr>
+</tbody>
+</table>
+<p>시간은 학습 설정이다. 공식은 10:00~15:00 5시간이며, 모의 시간이 길어질수록 공식에 가까워지는 게 아니라 "중간에 멈춰도 묶음이 완성되는가"를 연습하는 것이다. 공식 심사기준을 흉내 냈다고 주장하지 않는다.</p>
+<p>각 모의전마다 <a href="../labs/06-mock-exams.html">모의전 실습</a> 형식으로 준비·행동·산출물·예상 결과·막힘 분기를 채운다. 인물마다 목표가 달라야 하고, 지난 회차 답을 끼워 맞추면 그 회는 무효다. 평가는 평가표 규칙 그대로 — 고정 N, P/N, B=0, 미확인 명시, 모의/네이티브 분리.</p>
+<h2>규정이 안 열리거나 일정이 밀릴 때</h2>
+<ul>
+<li><strong>상세 규정 미공개가 계속되면</strong>: 모의 제출 묶음 완성까지가 종점. "제출 가능"으로 판정하지 않고, <a href="../templates/submission-checklist.html">제출 대조표</a>의 "공개 규정 확인 후 채울 것" 칸을 비워 둔 채 미확인으로 남긴다.</li>
+<li><strong>접수 상충(상단 마감 vs 하단 10/21)</strong>: 네가 직접 공식 경로·수신 메일로 확인한다. 확인 전까지 준비는 계속하되 "참가 확정"으로 적지 않는다.</li>
+<li><strong>모의전을 한 회 놓치면</strong>: 뒤 회차에 합치지 말고 건너뛰고 남은 회를 정상 수행한다. 범위를 줄일 때는 확장 경로부터 버린다.</li>
+<li><strong>카카오 요구가 늦게 확인되면</strong>: 연결 계약과 G 게이트로 판단한다. 승인·조건 확인 전의 실제 연결·새 계정·키·결제는 일정 압박과 무관하게 하지 않는다 — 이 과업에서 그런 행위가 없다는 뜻이지, 승인된 미래 심화 실습까지 금지한다는 뜻이 아니다.</li>
+<li><strong>링크가 막히면</strong>: 공식 홈페이지를 다시 열어 같은 항목을 찾고, 못 찾으면 미확인으로 남긴다. 확인 못 한 링크를 근거로 쓰지 않는다.</li>
+</ul>
+<h2>공식 규정 확인 항목 (도착하면 채우는 체크리스트)</h2>
+<p>규정 이메일이 오면 순서대로 확인한다:</p>
+<ol>
+<li>제한시간과 시작/종료 방식 — 5시간 공지와 실제 규정이 같은지</li>
+<li>허용 도구·기존 코드·외부 도움의 범위 — FAQ의 "제한 없음"이 규정에서 좁혀지는지</li>
+<li>제작물에 요구하는 카카오 경로 — 계정 연동만인지, 채널 챗봇·API 구축인지</li>
+<li>제출 형식 — 파일/URL/API, 스키마, 심사자 접근 조건</li>
+<li>환경 인증 사진의 정확한 요건과 공용 네트워크 판정 기준</li>
+<li>개인정보·비밀값을 결과물에 포함하지 않는 규정이 있는지</li>
+</ol>
+<p>확인한 항목은 <a href="../templates/submission-checklist.html">제출 대조표</a>에 <code>공개 1차 자료 확인</code>으로, 못 찾은 항목은 <code>미확인</code>으로 적는다.</p></body></html>

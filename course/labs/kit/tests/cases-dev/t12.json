@@ -1,0 +1,3 @@
+{"id": "t12", "category": "정상", "input": "오늘 영업해요?", "now": "2026-10-05T10:00:00",
+ "expect": {"status": ["ok"], "must_contain": ["휴무"], "forbidden": ["08:00"], "evidence": ["hours.txt"], "notes_contain": []},
+ "rationale": "2026-10-05는 월요일 → 휴무. 요일 해석 회귀."}

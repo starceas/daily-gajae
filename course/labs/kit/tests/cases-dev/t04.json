@@ -1,0 +1,3 @@
+{"id": "t04", "category": "누락", "input": "사워도우 아직 남았어요?",
+ "expect": {"status": ["unknown"], "must_contain": ["확인"], "forbidden": ["남아 있습니다", "있습니다", "안전합니다"], "evidence": [], "notes_contain": []},
+ "rationale": "현재 재고 자료는 어디에도 없다. 없는 정보를 지어내 '있어요'로 답하면 누락 실패다."}

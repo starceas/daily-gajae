@@ -1,0 +1,105 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>01 — 가상 인물 인터뷰 · AI 엔지니어링 학습 과정</title><style>
+:root{color-scheme:light dark}
+body{max-width:720px;margin:0 auto;padding:32px 20px 80px;font:17px/1.75 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;color:#222;background:#fbfaf7}
+@media (prefers-color-scheme:dark){body{color:#ddd;background:#16161a}a{color:#8ab4f8}code{background:#2a2a30}}
+a{color:#b4442c;text-decoration:none}a:hover{text-decoration:underline}
+h1{font-size:1.6em;line-height:1.35;margin:.2em 0 .4em}h2{font-size:1.15em;margin:1.8em 0 .4em}
+code{background:#efece6;padding:1px 5px;border-radius:4px;font-size:.9em}
+ul{padding-left:1.2em}li{margin:.25em 0}
+.meta{color:#888;font-size:.9em}.nav{margin-bottom:28px;font-size:.95em}
+.list a{display:block;padding:10px 0;border-bottom:1px solid #8883}
+.list .d{color:#888;font-size:.85em;margin-right:10px}
+
+table{border-collapse:collapse;width:100%;font-size:.92em;margin:1em 0;display:block;overflow-x:auto}
+th,td{border:1px solid #8885;padding:6px 8px;vertical-align:top}
+pre{background:#efece6;padding:12px;border-radius:6px;overflow-x:auto;font-size:.88em;line-height:1.5}
+pre code{background:none;padding:0}
+@media (prefers-color-scheme:dark){pre{background:#2a2a30}}
+</style></head>
+<body><div class="nav"><a href="../index.html">← AI 엔지니어링 학습 과정</a> · <a href="../../">가재 일기</a></div><h1>01 — 가상 인물 인터뷰</h1>
+<p>목표: 정해진 요구가 없는 상황에서, 질문으로 성공조건·모르는 것·하면 안 되는 행동을 캐낸다. 대회 예선의 첫 단계(인물 인터뷰)를 그대로 연습한다.</p>
+<p>시간(교육 설정): 30분. 인터뷰 자체는 20분 안에 끝낸다.</p>
+<h2>준비</h2>
+<ol>
+<li>새 작업 폴더: <code>practice/p01-interview/</code> 를 만든다.</li>
+<li>읽어도 되는 파일: <a href="kit/personas/p01-open.html">kit/personas/p01-open.md</a> — 인물의 공개 소개만 있다.</li>
+<li><strong>읽으면 안 되는 파일:</strong> <code>kit/personas/p01-role.md</code> — 인물의 사실표. 대회에서도 답은 미리 안 보여주므로, 네가 직접 열면 연습이 깨진다.</li>
+<li>대화형 AI CLI 한 세션을 연다.</li>
+</ol>
+<blockquote>
+<p>CLI를 인물로 쓰는 것은 API 호출이 아니다. 같은 CLI를 코딩에 쓰든 인터뷰 상대로 쓰든 "대화형 세션"이지 네트워크 API를 직접 부른 게 아니다. 구별은 02에서 다시 나온다.</p>
+</blockquote>
+<h2>실행 행동</h2>
+<ol>
+<li>CLI에 이 발주를 준다:</li>
+</ol>
+<pre><code class="language-text">&lt;학습 폴더&gt;/labs/kit/personas/p01-role.md 파일을 읽고,
+그 인물이 되어 나와 인터뷰해줘. 나는 네 빵집의 문의를 자동으로 도와줄 도구를
+만들려는 사람이야. 질문에는 그 인물로서 짧게 답해줘. 내가 &quot;인터뷰 끝&quot;이라고
+하면 역할에서 빠져나와.
+</code></pre>
+<ol start="2">
+<li><a href="../templates/interview.html">templates/interview.md</a>를 <code>practice/p01-interview/interview.md</code>로 복사해 기록지로 쓴다.</li>
+<li>먼저 물을 것(순서 중요 — 해결책 제안보다 현재 상황부터):
+   - "최근에 문의 때문에 곤란했던 일 있어요?" (실패 비용을 먼저 캔다)
+   - "손님이 제일 많이 묻는 게 뭐예요?"
+   - "그걸 지금은 어떻게 처리해요? 자료로 보는 게 있어요?"
+   - "자동으로 절대 하면 안 되는 게 있어요?"</li>
+<li>8~12개 사실을 캐는 게 목표다. 표면 요구("문의 자동 답변") 뒤의 우선순위·실패·금지를 파고든다.</li>
+<li>인터뷰 끝에 되읽어 확인한다: "제가 이해한 목표는 <strong>, 제일 중요한 예외는 </strong>, 자동으로 안 할 행동은 __예요. 맞아요?"</li>
+<li>인터뷰가 끝난 뒤에만 <code>kit/personas/materials/</code>의 txt 5개를 열어, 인물이 말한 자료와 실제 파일을 대조한다.</li>
+</ol>
+<h2>출력 예 / 기대 결과</h2>
+<p>인터뷰 기록에 최소 이것이 차야 한다:</p>
+<ul>
+<li>성공조건 3개 (예: "예약 누락 0"처럼 인물이 말한 기준)</li>
+<li>모르는 것 목록 (예: "당일 재고를 어떻게 아는지" — 인물도 기계로 집계 안 함)</li>
+<li>피해야 할 행동 (예: 환불 약속 금지, 재고 단정 금지)</li>
+<li>시간 제한 기대 (예: 영업시간 중 1시간)</li>
+</ul>
+<h2>산출물</h2>
+<ul>
+<li><code>practice/p01-interview/interview.md</code> — 채워진 인터뷰 기록.</li>
+</ul>
+<h2>실패 분기</h2>
+<table>
+<thead>
+<tr>
+<th>증상</th>
+<th>원인 후보</th>
+<th>다음 행동</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>인물이 길게 말해 핵심이 안 보임</td>
+<td>질문이 넓었다</td>
+<td>"최근 실제 사례 하나만"으로 좁혀 다시 묻는다</td>
+</tr>
+<tr>
+<td>요구가 "문의 자동화"에서 안 나옴</td>
+<td>실패 비용을 안 물었다</td>
+<td>"제일 아팠던 일"을 직접 묻는다</td>
+</tr>
+<tr>
+<td>자료 파일과 인물 말이 다름</td>
+<td>일부러 넣은 충돌(flyer.txt vs hours.txt)</td>
+<td>둘 다 기록하고 "어느 게 최신?"을 인터뷰에 추가</td>
+</tr>
+<tr>
+<td>CLI가 역할을 못 잡음</td>
+<td>파일을 못 읽거나 발주가 애매</td>
+<td>파일 절대경로와 "그 인물이 되어"를 다시 준다</td>
+</tr>
+</tbody>
+</table>
+<h2>합격 기준 (실행 전 고정: N=4)</h2>
+<ol>
+<li>인터뷰 기록에 질문·답이 6쌍 이상 있고 사실/추정이 구분됐다.</li>
+<li>성공조건 3개·미확인·금지 행동이 각각 비어 있지 않다.</li>
+<li>p01-role.md를 직접 열지 않고 CLI 경유로만 인터뷰했다(스스로 선언).</li>
+<li>materials 파일을 읽은 뒤, 인물 말과 자료의 충돌을 하나 이상 적었다.</li>
+</ol>
+<p>합격 = 4/4. 못 채우면 부족한 항목만 다음 세션 첫 행동으로 남긴다.</p></body></html>

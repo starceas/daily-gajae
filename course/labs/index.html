@@ -1,0 +1,95 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>실습 안내 (labs/) · AI 엔지니어링 학습 과정</title><style>
+:root{color-scheme:light dark}
+body{max-width:720px;margin:0 auto;padding:32px 20px 80px;font:17px/1.75 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;color:#222;background:#fbfaf7}
+@media (prefers-color-scheme:dark){body{color:#ddd;background:#16161a}a{color:#8ab4f8}code{background:#2a2a30}}
+a{color:#b4442c;text-decoration:none}a:hover{text-decoration:underline}
+h1{font-size:1.6em;line-height:1.35;margin:.2em 0 .4em}h2{font-size:1.15em;margin:1.8em 0 .4em}
+code{background:#efece6;padding:1px 5px;border-radius:4px;font-size:.9em}
+ul{padding-left:1.2em}li{margin:.25em 0}
+.meta{color:#888;font-size:.9em}.nav{margin-bottom:28px;font-size:.95em}
+.list a{display:block;padding:10px 0;border-bottom:1px solid #8883}
+.list .d{color:#888;font-size:.85em;margin-right:10px}
+
+table{border-collapse:collapse;width:100%;font-size:.92em;margin:1em 0;display:block;overflow-x:auto}
+th,td{border:1px solid #8885;padding:6px 8px;vertical-align:top}
+pre{background:#efece6;padding:12px;border-radius:6px;overflow-x:auto;font-size:.88em;line-height:1.5}
+pre code{background:none;padding:0}
+@media (prefers-color-scheme:dark){pre{background:#2a2a30}}
+</style></head>
+<body><div class="nav"><a href="../index.html">← AI 엔지니어링 학습 과정</a> · <a href="../../">가재 일기</a></div><h1>실습 안내 (labs/)</h1>
+<p>이 폴더는 <strong>읽는 숙제가 아니라 손으로 하는 숙제</strong>다. 코딩 문법은 배우지 않는다. 네가 하는 것: 질문하기, 명령 실행, 입력 파일 고치기, 출력을 기대값과 대조, 실패 원인 좁히기. 코드 작성은 기존 승인된 대화형 AI CLI 한 세션이 한다.</p>
+<h2>순서</h2>
+<table>
+<thead>
+<tr>
+<th>순서</th>
+<th>파일</th>
+<th>무엇을 연습하나</th>
+<th>시간(교육 설정)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><a href="01-interview.html">01-interview.md</a></td>
+<td>가상 인물에게 요구를 캐내기</td>
+<td>30분</td>
+</tr>
+<tr>
+<td>2</td>
+<td><a href="02-build.html">02-build.md</a></td>
+<td>CLI 한 세션에 발주해 작은 에이전트 엮기</td>
+<td>40분</td>
+</tr>
+<tr>
+<td>3</td>
+<td><a href="03-evaluate.html">03-evaluate.md</a></td>
+<td>고정 시험으로 합격/실패를 스스로 판정</td>
+<td>30분</td>
+</tr>
+<tr>
+<td>4</td>
+<td><a href="04-failures.html">04-failures.md</a></td>
+<td>실제 겪은 사고 7개를 손으로 재현</td>
+<td>45분</td>
+</tr>
+<tr>
+<td>5</td>
+<td><a href="05-kakao.html">05-kakao.md</a></td>
+<td>카카오 경로 구별 + 로컬 모의 어댑터(<strong>선택</strong>)</td>
+<td>30분</td>
+</tr>
+<tr>
+<td>6</td>
+<td><a href="06-mock-exams.html">06-mock-exams.md</a></td>
+<td>새 인물로 처음부터 끝까지 3회</td>
+<td>회당 90/120/150분</td>
+</tr>
+</tbody>
+</table>
+<p>도구·fixture는 <a href="kit/index.html">kit/</a>에 있다. <code>python3 --version</code>이 되면 전부 실행할 수 있다. 안 되면 설치하지 말고 각 실습의 "파일 대조 경로"를 쓴다.</p>
+<h2>공통 계약 — 모든 실습에서 지키는 것</h2>
+<ul>
+<li><strong>모의와 실제를 구분한다.</strong> <code>kit/</code>의 도구는 전부 오프라인 모의다. 모의 통과는 실제 모델(M)·카카오(K)·대회 수용(J)의 증거가 아니다. 증거는 D=문서, O=오프라인, M=실제 모델, K=실제 카카오, J=대회 수용으로 기록한다.</li>
+<li><strong>분모를 먼저 고정한다.</strong> 시험은 실행 전에 개수 N을 정하고, <code>N=P+F+U</code>로 기록한다 — P=통과, F=실행했으나 실패, U=아직 안 돌림. U를 통과로 세지 않고, 도중에 N을 줄이거나 기대값을 바꾸지 않는다.</li>
+<li><strong>핵심 경계 B=0.</strong> 금지 출력·비밀 노출·근거 없는 확정·자료 밖 지시 수행은 시험 전에 B로 정해둔다. 실행기가 세는 B_auto는 지정 금지 문구의 관측치 subset일 뿐 — 실제 도구 행동 위반은 B_manual로 수동 대조한다.</li>
+<li><strong>자동 기준 ≠ 최종 합격.</strong> 실행기가 보고하는 "자동 기준 충족"(P=N·B_auto=0·U=0)은 자동 검사 subset의 통과다. 제작물의 최종 판정은 의미 검토와 B_manual 수동 대조까지 마친 뒤에만 내린다.</li>
+<li><strong>미확인은 지우지 않는다.</strong> 모르는 건 "미확인"으로 남긴다.</li>
+<li>기록 양식은 <code>../templates/</code>에 있다: interview, requirements, eval-sheet, learning-log, channel-contract, submission-checklist.</li>
+</ul>
+<h2>에이전트 실행 계약 (02·03·05·06에서 공통 사용)</h2>
+<p>네가 만들게 할 에이전트든 <code>kit/agent/mock_agent.py</code>든 이 계약을 지켜야 같은 시험기가 돈다:</p>
+<pre><code>&lt;에이전트 명령&gt; --request &lt;요청JSON&gt; --data &lt;자료폴더&gt; --out &lt;출력폴더&gt;
+→ &lt;출력폴더&gt;/&lt;request_id&gt;.json
+응답 필드: request_id, status(ok|unknown|clarify|escalate|error),
+          answer, evidence[{source,detail}], duplicate, notes
+</code></pre>
+<p>요청 JSON은 <code>{"request_id": "...", "text": "...", "now": "2026-10-09T10:00:00"}</code>(now는 선택).</p>
+<h2>막히면</h2>
+<ul>
+<li>CLI 로그인·할당량 문제 → 오프라인 fixture 대조부터. 승인되지 않은 공급자로 자동 대체하지 않는다.</li>
+<li>명령이 안 먹는다 → 오류 문구 전체를 학습 기록에 붙여넣고, 어느 층(권한/경로/도구)인지 04-failures 분류법으로 좁힌다.</li>
+<li>"다 됐어요"라는 AI 말 → 명령과 출력 파일을 요구하고 직접 실행한다.</li>
+</ul></body></html>
