@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """공개 전 개인정보 검사. 걸리면 줄 번호와 사유를 찍고 종료 코드 1.
 
+종료 상태: 0=전부 통과, 1=검출 있음(목록은 stdout에 `경로:줄: 종류`),
+2=차단어 목록 없음, 3=그 밖의 검사 오류(읽기·인코딩·없는 파일 등, 사유는 stderr).
 차단어 목록(실명 등)은 저장소 밖 DIARY_BLOCKLIST 파일에 둔다. 저장소에 실명을 남기지 않기 위해서다.
 """
 import os
@@ -30,11 +32,15 @@ def load_blocklist():
     if not os.path.exists(BLOCKLIST):
         print(f"차단어 목록 없음: {BLOCKLIST}", file=sys.stderr)
         sys.exit(2)
-    with open(BLOCKLIST, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith("#"):
-                terms.append(line)
+    try:
+        with open(BLOCKLIST, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    terms.append(line)
+    except (OSError, UnicodeDecodeError) as e:
+        print(f"차단어 목록 읽기 실패: {BLOCKLIST}: {e}", file=sys.stderr)
+        sys.exit(3)
     return terms
 
 
@@ -55,11 +61,21 @@ def scan(path, terms):
 def main():
     terms = load_blocklist()
     bad = 0
+    errors = 0
     for path in sys.argv[1:]:
-        for no, label in scan(path, terms):
+        try:
+            hits = scan(path, terms)
+        except (OSError, UnicodeDecodeError) as e:
+            print(f"검사 오류: {path}: {e}", file=sys.stderr)
+            errors += 1
+            continue
+        for no, label in hits:
             # 차단어 자체는 찍지 않는다(로그에 실명이 남지 않게).
-            print(f"{os.path.basename(path)}:{no}: {label}")
+            # 경로는 호출한 인자 그대로 찍어 같은 basename의 다른 파일과 섞이지 않게 한다.
+            print(f"{path}:{no}: {label}")
             bad += 1
+    if errors:
+        sys.exit(3)
     sys.exit(1 if bad else 0)
 
 

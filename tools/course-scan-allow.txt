@@ -1,4 +1,8 @@
-selfcheck.py:50: 차단어
-selfcheck.py:708: 절대 경로
-02-principles.html:99: 주소
-02-principles.md:119: 주소
+# 기존 "검토된 오탐" 승인 항목. 줄 번호가 달라지면 새 검출로 차단된다.
+course/labs/kit/tests/selfcheck.py:50: 차단어
+# 기존 "검토된 오탐" 승인 항목. 줄 번호가 달라지면 새 검출로 차단된다.
+course/labs/kit/tests/selfcheck.py:708: 절대 경로
+# 기존 "검토된 오탐" 승인 항목. 줄 번호가 달라지면 새 검출로 차단된다.
+course/course/02-principles.html:99: 주소
+# 기존 "검토된 오탐" 승인 항목. 줄 번호가 달라지면 새 검출로 차단된다.
+course/course/02-principles.md:119: 주소
