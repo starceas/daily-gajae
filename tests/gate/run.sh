@@ -252,7 +252,42 @@ PY
   fi
 }
 
+g15() { # 다른 브랜치 체크아웃 + 로컬 main에 미감사 커밋 → 관문 오류(2)·발행 경유 원격 불변
+  sandbox
+  commit_file posts/2026-10-02.md "# 글 $TERM"      # 로컬 main의 미감사(차단어) 커밋
+  git -C "$WORK" checkout -qb side 'HEAD^'
+  commit_file posts/2026-10-03.md "# 안전 글"        # HEAD(감사 대상)는 안전하고 원격보다 앞섬
+  if [ "$GATE_MODE" -eq 1 ]; then
+    gate; local rc=$?
+    [ $rc -eq 2 ] && [ -s "$T/gate.err" ] \
+      && ok "g15 다른 브랜치 체크아웃 관문 오류" || no "g15 다른 브랜치 체크아웃 관문 오류"
+  fi
+  pub; local prc=$?
+  if [ $prc -ne 0 ] && [ "$(remote_tip)" = "$TIP0" ]; then
+    ok "g15 발행 경유 원격 불변"
+  else
+    no "g15 발행 경유 원격 불변"
+  fi
+}
+
+g16() { # 분리된 HEAD → 관문 오류(2)·발행 경유 원격 불변
+  sandbox
+  commit_file posts/2026-10-02.md "# 안전 글"        # HEAD는 안전하고 원격보다 앞섬
+  git -C "$WORK" checkout -q --detach HEAD
+  if [ "$GATE_MODE" -eq 1 ]; then
+    gate; local rc=$?
+    [ $rc -eq 2 ] && [ -s "$T/gate.err" ] \
+      && ok "g16 분리된 HEAD 관문 오류" || no "g16 분리된 HEAD 관문 오류"
+  fi
+  pub; local prc=$?
+  if [ $prc -ne 0 ] && [ "$(remote_tip)" = "$TIP0" ]; then
+    ok "g16 발행 경유 원격 불변"
+  else
+    no "g16 발행 경유 원격 불변"
+  fi
+}
+
 echo "subject: $SUBJECT"
-g1; g2; g3; g4; g5; g6; g7; g8; g9; g10; g11; g12; g13; g14
+g1; g2; g3; g4; g5; g6; g7; g8; g9; g10; g11; g12; g13; g14; g15; g16
 echo "== $PASS passed, $FAILED failed =="
 [ "$FAILED" -eq 0 ]

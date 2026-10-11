@@ -9,6 +9,9 @@
   허용 목록 tools/course-scan-allow.txt(저장소 상대경로:줄: 종류)를 같은 방식으로 적용한다.
 - 로컬이 원격과 같으면 SYNC, 앞서 있고 검사를 통과하면 READY,
   원격이 앞서거나 갈라졌으면 거부한다.
+- 발행기는 refs/heads/main을 푸시하므로, 체크아웃이 refs/heads/main에
+  붙어 있지 않으면(다른 브랜치·분리된 HEAD) 감사 대상과 푸시 대상이 달라
+  관문 오류다.
 
 출력(종료 상태): SYNC/READY(0), 위반 목록(1), 오류(2, 사유는 stderr).
 출력에는 경로·줄·종류만 담고 파일 내용·차단어를 싣지 않는다.
@@ -40,6 +43,12 @@ def main():
     try:
         root = git("rev-parse", "--show-toplevel", text=True).strip()
         head = git("rev-parse", "HEAD", text=True).strip()
+        ref_r = subprocess.run(
+            ["git", "symbolic-ref", "-q", "HEAD"],
+            capture_output=True, text=True)
+        if ref_r.returncode != 0 or ref_r.stdout.strip() != "refs/heads/main":
+            fail("HEAD가 refs/heads/main이 아닙니다 "
+                 "(다른 브랜치 또는 분리된 HEAD — 감사 대상과 푸시 대상이 다릅니다)")
         base_r = subprocess.run(
             ["git", "rev-parse", "--verify", "-q", "refs/remotes/origin/main"],
             capture_output=True, text=True)
