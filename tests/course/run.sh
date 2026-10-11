@@ -12,6 +12,9 @@ FAILED=0
 ok() { PASS=$((PASS + 1)); printf 'PASS %s\n' "$1"; }
 no() { FAILED=$((FAILED + 1)); printf 'FAIL %s — %s\n' "$1" "$2"; }
 
+# GNU(Linux)는 -c, BSD(macOS)는 -f — 앞이 실패하면 뒤를 쓴다.
+mtime() { stat -c %Y "$1" 2>/dev/null || stat -f %m "$1"; }
+
 # 합성 차단어(실명 아님). 검출 시험에 쓴다.
 TERM="GAZZI-NAME-XXXX-001"
 
@@ -275,12 +278,12 @@ t11() {
   git -C "$T/other" commit -qm "remote ahead"
   git -C "$T/other" push -q origin main
   touch -t 200001010000 "$STAMP_T"   # DONE이 더 새 것으로 보이게 stamp를 낡게 둔다
-  before=$(stat -f %m "$STAMP_T")
+  before=$(mtime "$STAMP_T")
   run_publish; rc=$?
-  if [ "$rc" -ne 0 ] && [ "$(stat -f %m "$STAMP_T")" = "$before" ]; then
+  if [ "$rc" -ne 0 ] && [ "$(mtime "$STAMP_T")" = "$before" ]; then
     ok "⑪원격이 앞섬 → stamp 미갱신·비정상 종료"
   else
-    no "⑪원격이 앞섬" "rc=$rc stamp_mtime=$(stat -f %m "$STAMP_T") 기존=$before"
+    no "⑪원격이 앞섬" "rc=$rc stamp_mtime=$(mtime "$STAMP_T") 기존=$before"
   fi
   teardown
 }

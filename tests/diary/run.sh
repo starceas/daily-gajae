@@ -56,6 +56,7 @@ with open(os.environ["NOTIFY_LOG"], "a") as f:
 PY
   git init -q --bare "$REMOTE"
   git init -q "$WORK"
+  git -C "$WORK" symbolic-ref HEAD refs/heads/main  # 운영 관문·발행기는 main 고정
   local at='@'
   git -C "$WORK" config user.email "test${at}example.invalid"
   git -C "$WORK" config user.name "test"
