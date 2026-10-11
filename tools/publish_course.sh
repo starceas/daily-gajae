@@ -83,7 +83,7 @@ elif [ $grc -ne 0 ]; then
   fail 2 "형님, 학습 과정 발행 경계 검사 자체가 실패해 푸시하지 않았습니다."
 fi
 
-if git push -q origin main; then
+if git push -q --no-follow-tags origin refs/heads/main:refs/heads/main; then
   touch "$STAMP"
   notify "형님, AI 엔지니어링 학습 과정 새 차수를 발행했습니다. https://starceas.github.io/daily-gajae/course/"
   exit 0

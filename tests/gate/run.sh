@@ -287,7 +287,47 @@ g16() { # 분리된 HEAD → 관문 오류(2)·발행 경유 원격 불변
   fi
 }
 
+g17() { # push.followTags=true → 두 발행기 각각 주석 태그를 동반 전송하지 않는다
+  sandbox
+  git -C "$WORK" config push.followTags true
+  commit_file posts/2026-10-02.md "# 안전 글"
+  tagname="g17-note"; tagmsg="note-$TERM"        # 태그·차단어 문구는 실행 시 조립
+  git -C "$WORK" tag -a "$tagname" -m "$tagmsg"
+
+  # 일기 발행기: 발행은 성공, 원격에는 refs/heads/main만 남아야 한다.
+  pub; local prc=$?
+  if [ $prc -eq 0 ] && \
+     [ "$(git --git-dir="$REMOTE" for-each-ref --format='%(refname)')" = "refs/heads/main" ]; then
+    ok "g17 일기 발행 태그 미전송"
+  else
+    no "g17 일기 발행 태그 미전송"
+  fi
+
+  # 강의 발행기: 합성 원본(DONE+payload)·빌드 스텁·stamp 픽스처로 실행한다.
+  mkdir -p "$T/src/payload"
+  printf '안전 본문\n' > "$T/src/payload/g17.md"
+  touch "$T/src/DONE"
+  cat > "$T/cbuild.sh" <<'SH'
+#!/bin/bash
+src="$1"
+mkdir -p course
+cp -R "$src/payload/." course/
+SH
+  chmod +x "$T/cbuild.sh"
+  (cd "$WORK" && env REPO="$WORK" SRC="$T/src" STAMP="$T/course.stamp" \
+    POST="$STUB" CHANNEL=0 DIARY_BLOCKLIST="$BL" NOTIFY_LOG="$NOTIFY" \
+    COURSE_BUILD="$T/cbuild.sh" \
+    bash tools/publish_course.sh >"$T/pubc.log" 2>&1)
+  local crc=$?
+  if [ $crc -eq 0 ] && [ -f "$T/course.stamp" ] && \
+     [ "$(git --git-dir="$REMOTE" for-each-ref --format='%(refname)')" = "refs/heads/main" ]; then
+    ok "g17 강의 발행 태그 미전송"
+  else
+    no "g17 강의 발행 태그 미전송"
+  fi
+}
+
 echo "subject: $SUBJECT"
-g1; g2; g3; g4; g5; g6; g7; g8; g9; g10; g11; g12; g13; g14; g15; g16
+g1; g2; g3; g4; g5; g6; g7; g8; g9; g10; g11; g12; g13; g14; g15; g16; g17
 echo "== $PASS passed, $FAILED failed =="
 [ "$FAILED" -eq 0 ]

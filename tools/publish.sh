@@ -158,7 +158,7 @@ fi
 gate_out=$(python3 tools/push_gate.py); grc=$?
 if [ $grc -eq 0 ]; then
   if [ "$gate_out" = "READY" ]; then
-    if git push -q origin main; then
+    if git push -q --no-follow-tags origin refs/heads/main:refs/heads/main; then
       if [ ${#published[@]} -gt 0 ]; then
         notify "형님, 가재 일기 ${published[*]}를 발행했습니다. https://starceas.github.io/daily-gajae/posts/${published[${#published[@]}-1]}.html"
       else
