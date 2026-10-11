@@ -190,7 +190,68 @@ g11() { # 갈라진 상태도 거부
   expect_blocked "g11 갈라진 상태 거부"
 }
 
+g12() { # 같은 경로 안전→차단→다른 안전 3버전: 열거한 중간 blob도 실제로 검사돼야 거부
+  sandbox
+  commit_file posts/2026-10-02.md "# 글 첫 안전본"
+  commit_file posts/2026-10-02.md "# 글 $TERM"
+  commit_file posts/2026-10-02.md "# 글 다른 안전본"
+  expect_blocked "g12 같은 경로 세 버전의 중간 차단 blob 거부"
+}
+
+g13() { # git cat-file -t 조회 실패는 blob 생략이 아니라 관문 오류(2)
+  sandbox
+  commit_file posts/2026-10-02.md "# 글 $TERM"
+  mkdir -p "$T/bin"
+  real_git=$(command -v git)
+  cat > "$T/bin/git" <<EOF
+#!/bin/bash
+if [ "\$1" = "cat-file" ] && [ "\$2" = "-t" ]; then
+  echo "synthetic object lookup failure" >&2
+  exit 128
+fi
+exec "$real_git" "\$@"
+EOF
+  chmod +x "$T/bin/git"
+  if [ "$GATE_MODE" -eq 1 ]; then
+    (cd "$WORK" && env PATH="$T/bin:$PATH" DIARY_BLOCKLIST="$BL" \
+      python3 tools/push_gate.py >"$T/gate.out" 2>"$T/gate.err")
+    local rc=$?
+    [ $rc -eq 2 ] && ok "g13 cat-file -t 조회 실패는 관문 오류" || no "g13 cat-file -t 조회 실패는 관문 오류"
+  else
+    draft "정상 글" 2026-10-09
+    (cd "$WORK" && env PATH="$T/bin:$PATH" REPO="$WORK" POST="$STUB" CHANNEL=0 \
+      DIARY_BLOCKLIST="$BL" NOTIFY_LOG="$NOTIFY" bash tools/publish.sh >"$T/pub.log" 2>&1)
+    local rc=$?
+    if [ $rc -ne 0 ] && [ "$(remote_tip)" = "$TIP0" ]; then
+      ok "g13 cat-file -t 조회 실패는 관문 오류"
+    else
+      no "g13 cat-file -t 조회 실패는 관문 오류"
+    fi
+  fi
+}
+
+g14() { # 검사기 exit 1 + 빈 stdout은 위반 0건이 아니라 관문 오류(2)
+  sandbox
+  commit_file posts/2026-10-02.md "# 안전 글"
+  cat > "$WORK/tools/scan.py" <<'PY'
+import sys
+sys.exit(1)
+PY
+  if [ "$GATE_MODE" -eq 1 ]; then
+    gate; local rc=$?
+    [ $rc -eq 2 ] && ok "g14 검사기 빈 출력·exit 1은 관문 오류" || no "g14 검사기 빈 출력·exit 1은 관문 오류"
+  else
+    draft "정상 글" 2026-10-09
+    pub; local rc=$?
+    if [ $rc -ne 0 ] && [ "$(remote_tip)" = "$TIP0" ]; then
+      ok "g14 검사기 빈 출력·exit 1은 관문 오류"
+    else
+      no "g14 검사기 빈 출력·exit 1은 관문 오류"
+    fi
+  fi
+}
+
 echo "subject: $SUBJECT"
-g1; g2; g3; g4; g5; g6; g7; g8; g9; g10; g11
+g1; g2; g3; g4; g5; g6; g7; g8; g9; g10; g11; g12; g13; g14
 echo "== $PASS passed, $FAILED failed =="
 [ "$FAILED" -eq 0 ]

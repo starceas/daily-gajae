@@ -88,7 +88,8 @@ def main():
         if not ALLOWED_PATH.match(path):
             violations.append(f"{path}: 비허용 경로")
 
-    # 새로 공개되는 blob 바이트를 임시 tree에 실제 상대경로로 풀어 scan한다.
+    # 새로 공개되는 blob 바이트를 blob별 임시 파일(sha 명명)에 풀어 scan한다.
+    # 같은 경로의 서로 다른 버전이 서로를 덮어쓰지 않게 파일명은 sha로 둔다.
     blob_paths = {}
     for path, sha in changes:
         if not sha.startswith("0000000"):
@@ -96,23 +97,24 @@ def main():
     if blob_paths:
         with tempfile.TemporaryDirectory() as tmp:
             args = []
-            for sha, paths in blob_paths.items():
-                if subprocess.run(
-                        ["git", "cat-file", "-t", sha],
-                        capture_output=True, text=True).stdout.strip() != "blob":
-                    continue
-                rel = paths[0]
-                dest = os.path.join(tmp, "tree", rel)
-                os.makedirs(os.path.dirname(dest), exist_ok=True)
-                data = git("cat-file", "blob", sha)
-                with open(dest, "wb") as f:
-                    f.write(data)
-                args.append(rel)
+            try:
+                for sha in blob_paths:
+                    if git("cat-file", "-t", sha, text=True).strip() != "blob":
+                        continue
+                    dest = os.path.join(tmp, "tree", sha)
+                    os.makedirs(os.path.dirname(dest), exist_ok=True)
+                    with open(dest, "wb") as f:
+                        f.write(git("cat-file", "blob", sha))
+                    args.append(sha)
+            except RuntimeError as e:
+                fail(str(e))
             if args:
                 scan = subprocess.run(
                     [sys.executable, os.path.join(root, "tools", "scan.py")] + sorted(args),
                     cwd=os.path.join(tmp, "tree"), capture_output=True, text=True)
                 if scan.returncode == 1:
+                    if not scan.stdout.strip():
+                        fail("scan.py가 종료 상태 1인데 검출 출력이 없습니다")
                     try:
                         with open(os.path.join(root, "tools", "course-scan-allow.txt"),
                                   encoding="utf-8") as f:
@@ -120,11 +122,10 @@ def main():
                                      if l.strip() and not l.lstrip().startswith("#")}
                     except OSError:
                         allow = set()
-                    sha_of_path = {p: s for s, ps in blob_paths.items() for p in ps}
                     for line in scan.stdout.splitlines():
                         front, _, kind = line.rpartition(": ")
-                        hit_path, _, no = front.rpartition(":")
-                        for p in blob_paths.get(sha_of_path.get(hit_path, ""), [hit_path]):
+                        hit_sha, _, no = front.rpartition(":")
+                        for p in blob_paths.get(hit_sha, [hit_sha]):
                             cand = f"{p}:{no}: {kind}"
                             if cand not in allow:
                                 violations.append(cand)
