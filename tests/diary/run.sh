@@ -34,7 +34,7 @@ assert_not() {
   if "$@" >/dev/null 2>&1; then no "$desc"; else ok "$desc"; fi
 }
 
-remote_ls() { git --git-dir="$REMOTE" ls-tree -r --name-only main; }
+remote_ls() { git --git-dir="$REMOTE" ls-tree -r --name-only "$BR"; }
 has_remote() { remote_ls | grep -qxF "$1"; }
 notify_has() { grep -qF "$1" "$NOTIFY"; }
 
@@ -68,12 +68,14 @@ PY
   git -C "$WORK" add -A
   git -C "$WORK" commit -qm seed
   git -C "$WORK" remote add origin "$REMOTE"
-  git -C "$WORK" push -q -u origin main
+  BR=$(git -C "$WORK" branch --show-current)
+  git -C "$WORK" push -q -u origin "$BR"
+  git --git-dir="$REMOTE" symbolic-ref HEAD "refs/heads/$BR"
 }
 
 run_pub() {
   (cd "$WORK" && env REPO="$WORK" POST="$STUB" CHANNEL=000 \
-    DIARY_BLOCKLIST="$BLOCKLIST" NOTIFY_LOG="$NOTIFY" \
+    DIARY_BLOCKLIST="${BLOCKLIST_OVERRIDE:-$BLOCKLIST}" NOTIFY_LOG="$NOTIFY" \
     bash tools/publish.sh >"$T/pub.log" 2>&1)
 }
 
@@ -154,6 +156,7 @@ s4() {
   assert "s4 초안이 drafts로 복구됨" test -f "$WORK/drafts/2026-10-02.md"
   assert_not "s4 posts에 초안이 남지 않음" test -e "$WORK/posts/2026-10-02.md"
   assert "s4 HEAD가 변하지 않음" sh -c "test \"\$(git -C '$WORK' rev-parse HEAD)\" = '$before'"
+  assert "s4 posts·index가 HEAD와 동일(미추적 html 없음)" sh -c "test -z \"\$(git -C '$WORK' status --porcelain -- posts index.html)\""
   assert "s4 알림에 커밋 실패 사유 있음" notify_has "커밋이 실패"
   rm "$WORK/.git/hooks/pre-commit"
   run_pub
@@ -168,7 +171,7 @@ s5() {
   git -C "$WORK" remote set-url origin "$T/gone.git"
   run_pub
   assert_not "s5 push 실패는 비정상 종료" test $? -eq 0
-  assert "s5 알림에 푸시 실패 사유 있음" notify_has "푸시가 실패"
+  assert "s5 알림에 실패 사유 있음" notify_has "실패해"
   assert_not "s5 실패 시점에 원격에 글 없음" has_remote posts/2026-10-02.md
   git -C "$WORK" remote set-url origin "$REMOTE"
   run_pub
@@ -219,6 +222,92 @@ s8() {
   assert "s8 알림 실패에도 원격에 발행됨" has_remote posts/2026-10-02.md
 }
 
-s1; s2; s3; s4; s5; s6; s7; s8
+# s9: 강의 발행기가 남긴 허용 경로 미전송 커밋은 일기 발행이 함께 전송한다.
+s9() {
+  sandbox
+  mkdir -p "$WORK/course"
+  printf '강의 변경\n' > "$WORK/course/new-lesson.md"
+  git -C "$WORK" add course/new-lesson.md
+  git -C "$WORK" commit -qm "course unpushed"
+  mk_draft 2026-10-02 "정상 글"
+  run_pub
+  assert "s9 강의 미전송+일기 초안 실행 성공" test $? -eq 0
+  assert "s9 일기가 원격에 발행됨" has_remote posts/2026-10-02.md
+  assert "s9 강의 미전송분도 원격에 전송됨" has_remote course/new-lesson.md
+}
+
+# s10: 빌드 도중 누군가 drafts/ 파일을 스테이징해도 인덱스 검사가 막고 커밋하지 않는다.
+s10() {
+  sandbox
+  cat > "$WORK/tools/build.py" <<'PY'
+import pathlib, subprocess
+posts = pathlib.Path("posts")
+for md in posts.glob("*.md"):
+    (posts / (md.stem + ".html")).write_text("<html></html>", encoding="utf-8")
+pathlib.Path("index.html").write_text("<html>idx</html>", encoding="utf-8")
+subprocess.run(["git", "add", "-f", "drafts/evil.txt"])
+PY
+  printf '나쁜 파일\n' > "$WORK/drafts/evil.txt"
+  mk_draft 2026-10-02 "정상 글"
+  local before
+  before=$(git -C "$WORK" rev-parse HEAD)
+  run_pub
+  assert_not "s10 스테이징 오염은 비정상 종료" test $? -eq 0
+  assert "s10 커밋이 만들어지지 않음" sh -c "test \"\$(git -C '$WORK' rev-parse HEAD)\" = '$before'"
+  assert "s10 초안이 drafts로 복구됨" test -f "$WORK/drafts/2026-10-02.md"
+  assert "s10 posts·index가 HEAD와 동일" sh -c "test -z \"\$(git -C '$WORK' status --porcelain -- posts index.html)\""
+}
+
+# s11: 빌드 결과 HTML에 차단어가 생기면 결과 검사가 막는다.
+s11() {
+  sandbox
+  cat > "$WORK/tools/build.py" <<'PY'
+import pathlib
+posts = pathlib.Path("posts")
+for md in posts.glob("*.md"):
+    (posts / (md.stem + ".html")).write_text("<html>ZZZFAKEBLOCKWORDZZZ</html>", encoding="utf-8")
+pathlib.Path("index.html").write_text("<html>idx</html>", encoding="utf-8")
+PY
+  mk_draft 2026-10-02 "정상 글"
+  run_pub
+  assert_not "s11 오염된 빌드 결과는 비정상 종료" test $? -eq 0
+  assert "s11 초안이 drafts로 복구됨" test -f "$WORK/drafts/2026-10-02.md"
+  assert "s11 알림에 빌드 결과 검사 사유" notify_has "빌드 결과"
+  assert_not "s11 원격에 오염 결과물 없음" has_remote posts/2026-10-02.md
+}
+
+# s12: 검사기 자체 오류(차단어 목록 부재)는 검출과 구분해 중단한다.
+s12() {
+  sandbox
+  mk_draft 2026-10-02 "정상 글"
+  BLOCKLIST_OVERRIDE="$T/missing-blocklist.txt" run_pub
+  assert_not "s12 차단어 목록 부재는 비정상 종료" test $? -eq 0
+  assert "s12 초안이 drafts에 남음" test -f "$WORK/drafts/2026-10-02.md"
+  assert "s12 알림에 검사 오류 사유" notify_has "검사가 오류"
+  assert_not "s12 원격에 발행되지 않음" has_remote posts/2026-10-02.md
+}
+
+# s13: 원격이 앞선 상태면 커밋을 만들어도 push하지 않고 실패를 드러낸다.
+s13() {
+  sandbox
+  git clone -q "$REMOTE" "$T/other"
+  git -C "$T/other" config user.name t
+  local at='@'
+  git -C "$T/other" config user.email "t${at}e.invalid"
+  echo "남의 변경" > "$T/other/elsewhere.txt"
+  git -C "$T/other" add elsewhere.txt
+  git -C "$T/other" commit -qm "remote ahead"
+  git -C "$T/other" push -q origin "$BR"
+  mk_draft 2026-10-02 "정상 글"
+  run_pub
+  assert_not "s13 원격이 앞서면 비정상 종료" test $? -eq 0
+  assert_not "s13 원격에 새 글이 없음" has_remote posts/2026-10-02.md
+  git -C "$WORK" pull -q --rebase origin "$BR"
+  run_pub
+  assert "s13 동기화 후 재실행 성공" test $? -eq 0
+  assert "s13 재실행으로 원격에 발행됨" has_remote posts/2026-10-02.md
+}
+
+s1; s2; s3; s4; s5; s6; s7; s8; s9; s10; s11; s12; s13
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

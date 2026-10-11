@@ -25,6 +25,7 @@ setup_fixture() {
   mkdir -p "$REPO_T" "$SRC_T/payload" "$H/gajaeway/state/diary" "$H/gajaeway/ops/notify" "$T/bin"
 
   git init -q --bare "$BARE"
+  git --git-dir="$BARE" symbolic-ref HEAD refs/heads/main
   git init -q "$REPO_T"
   git -C "$REPO_T" symbolic-ref HEAD refs/heads/main
   cp -R "$SUBJECT/tools" "$REPO_T/tools"
@@ -88,8 +89,8 @@ run_publish() {
     bash "$SUBJECT/tools/publish_course.sh" >> "$T/publish.out" 2>&1
 }
 
-remote_files() { git -C "$REPO_T" ls-tree -r --name-only origin/main 2>/dev/null; }
-remote_has() { remote_files | grep -qF "$1"; }
+remote_files() { git -C "$REPO_T" ls-tree -r --name-only -z origin/main 2>/dev/null | tr '\0' '\n'; }
+remote_has() { remote_files | grep -qxF "$1"; }
 
 # ① 차단어 목록 없음(검사 오류) → 진행 안 함·stamp 불변
 t1() {
@@ -243,7 +244,81 @@ t9() {
   teardown
 }
 
+# ⑩ 공백·한글 파일명이 정상 발행됨(경로 목록은 NUL 구분이어야 한다)
+t10() {
+  setup_fixture
+  printf '안전 본문\n' > "$SRC_T/payload/file name.md"
+  printf '안전 본문\n' > "$SRC_T/payload/한글.md"
+  touch "$SRC_T/DONE"
+  run_publish; rc=$?
+  if [ "$rc" -eq 0 ] && remote_has "course/file name.md" && remote_has "course/한글.md" && [ -f "$STAMP_T" ]; then
+    ok "⑩공백·한글 파일명 → 정상 발행"
+  else
+    no "⑩공백·한글 파일명" "rc=$rc remote=$(remote_files | tr '\n' ' ')"
+  fi
+  teardown
+}
+
+# ⑪ 원격이 앞선 상태 → 무변경이어도 stamp를 갱신하지 않고 비정상 종료
+t11() {
+  setup_fixture
+  echo "본문" > "$SRC_T/payload/ok.md"
+  touch "$SRC_T/DONE"
+  run_publish
+  [ -f "$STAMP_T" ] || { no "⑪원격 앞섬" "사전 발행 실패"; teardown; return; }
+  git clone -q "$BARE" "$T/other"
+  git -C "$T/other" config user.name t
+  u="o"; d="example.invalid"
+  git -C "$T/other" config user.email "$u@$d"
+  echo "남의 변경" > "$T/other/elsewhere.txt"
+  git -C "$T/other" add elsewhere.txt
+  git -C "$T/other" commit -qm "remote ahead"
+  git -C "$T/other" push -q origin main
+  touch -t 200001010000 "$STAMP_T"   # DONE이 더 새 것으로 보이게 stamp를 낡게 둔다
+  before=$(stat -f %m "$STAMP_T")
+  run_publish; rc=$?
+  if [ "$rc" -ne 0 ] && [ "$(stat -f %m "$STAMP_T")" = "$before" ]; then
+    ok "⑪원격이 앞섬 → stamp 미갱신·비정상 종료"
+  else
+    no "⑪원격이 앞섬" "rc=$rc stamp_mtime=$(stat -f %m "$STAMP_T") 기존=$before"
+  fi
+  teardown
+}
+
+# ⑫ 알림 스텁 실패가 발행 결과를 바꾸지 않는다
+t12() {
+  setup_fixture
+  printf 'import sys; sys.exit(7)\n' > "$H/gajaeway/ops/notify/post.py"
+  echo "본문" > "$SRC_T/payload/ok.md"
+  touch "$SRC_T/DONE"
+  run_publish; rc=$?
+  if [ "$rc" -eq 0 ] && remote_has "course/ok.md" && [ -f "$STAMP_T" ]; then
+    ok "⑫알림 실패에도 발행 성공 종료"
+  else
+    no "⑫알림 실패" "rc=$rc"
+  fi
+  teardown
+}
+
+# ⑬ 미전송 커밋의 커밋된 blob이 검사 대상이다(작업 파일과 달라도)
+t13() {
+  setup_fixture
+  echo "# $TERM" > "$REPO_T/posts/2099-01-01.md"
+  git -C "$REPO_T" add "posts/2099-01-01.md"
+  git -C "$REPO_T" commit -qm "dirty post commit"
+  printf '# 안전한 본문\n' > "$REPO_T/posts/2099-01-01.md"   # 작업 파일만 안전하게
+  echo "본문" > "$SRC_T/payload/ok.md"
+  touch "$SRC_T/DONE"
+  run_publish; rc=$?
+  if [ "$rc" -ne 0 ] && ! remote_has "posts/2099-01-01.md" && ! remote_has "course/ok.md" && [ ! -f "$STAMP_T" ]; then
+    ok "⑬커밋된 차단어 blob → push 거부"
+  else
+    no "⑬커밋된 차단어 blob" "rc=$rc remote=$(remote_files | tr '\n' ' ')"
+  fi
+  teardown
+}
+
 echo "subject: $SUBJECT"
-t1; t2; t3; t4; t5; t6; t7; t8; t9
+t1; t2; t3; t4; t5; t6; t7; t8; t9; t10; t11; t12; t13
 echo "== $PASS passed, $FAILED failed =="
 [ "$FAILED" -eq 0 ]

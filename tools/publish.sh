@@ -52,16 +52,14 @@ PY
 # posts/*.md 원본의 미커밋 수정은 건드리지 않는다.
 rollback() {
   local n
+  git reset -q 2>/dev/null || true
   for n in ${moved[@]+"${moved[@]}"}; do
     [ -e "posts/$n" ] && mv "posts/$n" "drafts/$n"
     git checkout -q HEAD -- "posts/$n" 2>/dev/null || true
+    git ls-files --error-unmatch "posts/${n%.md}.html" >/dev/null 2>&1 || rm -f "posts/${n%.md}.html"
   done
   git checkout -q HEAD -- index.html 2>/dev/null || true
   git checkout -q HEAD -- 'posts/*.html' 2>/dev/null || true
-  for n in ${moved[@]+"${moved[@]}"}; do
-    git ls-files --error-unmatch "posts/${n%.md}.html" >/dev/null 2>&1 || rm -f "posts/${n%.md}.html"
-  done
-  git reset -q 2>/dev/null || true
   return 0
 }
 
@@ -75,6 +73,9 @@ if [ -n "$dirty" ]; then
   notify "형님, 가재 일기 posts/ 원본이 커밋 상태와 달라 발행을 중단했습니다. 확인할 파일: $(echo "$dirty" | awk '{print $2}' | tr '\n' ' ')"
   exit 1
 fi
+
+# 원격 추적 ref를 최신으로 맞춘다. 실패는 진행 조건이 아니라 실패다.
+git fetch -q origin || { notify "형님, 가재 일기 원격 확인이 실패해 발행하지 않았습니다."; exit 1; }
 
 shopt -s nullglob
 drafts=(drafts/*.md)
@@ -129,7 +130,7 @@ if [ ${#moved[@]} -gt 0 ]; then
 
   # 커밋 직전: 실제 인덱스가 승인 목록과 일치하는지 확인한다.
   expected=$(printf '%s\n' "${stage[@]}" | LC_ALL=C sort)
-  actual=$(git diff --cached --name-only | LC_ALL=C sort)
+  actual=$(git diff --cached --name-only -z | tr '\0' '\n' | LC_ALL=C sort)
   extra=$(comm -23 <(printf '%s\n' "$actual") <(printf '%s\n' "$expected"))
   miss=""
   for n in "${moved[@]}"; do
@@ -152,62 +153,29 @@ if [ ${#moved[@]} -gt 0 ]; then
   moved=()
 fi
 
-# 미전송 커밋이 있으면(이번 커밋 포함) 새 초안 유무와 관계없이 전송을 시도한다.
-if git rev-parse -q --verify refs/remotes/origin/main >/dev/null 2>&1; then
-  changed=$(git log --pretty=format: --name-only origin/main..HEAD | LC_ALL=C sort -u)
-  ahead=$(git rev-list --count origin/main..HEAD)
-else
-  changed=$(git ls-tree -r --name-only HEAD | LC_ALL=C sort -u)
-  ahead=$(git rev-list --count HEAD)
-fi
-
-if [ "$ahead" -gt 0 ]; then
-  # push 직전: 미전송 커밋이 건드린 파일이 허용 경로인지, 내용이 검사를 통과하는지 확인한다.
-  bad_paths=()
-  scan_tmp=$(mktemp -d)
-  scan_targets=()
-  while IFS= read -r f; do
-    [ -z "$f" ] && continue
-    case "$f" in
-      posts/*.md|posts/*.html|index.html) ;;
-      *) bad_paths+=("$f"); continue ;;
-    esac
-    if git cat-file -e "HEAD:$f" 2>/dev/null; then
-      mkdir -p "$scan_tmp/$(dirname "$f")"
-      git show "HEAD:$f" > "$scan_tmp/$f"
-      scan_targets+=("$scan_tmp/$f")
-    fi
-  done <<EOF
-$changed
-EOF
-  if [ ${#bad_paths[@]} -gt 0 ]; then
-    rm -rf "$scan_tmp"
-    notify "형님, 가재 일기 미전송 커밋에 허용되지 않은 파일(${bad_paths[*]})이 있어 푸시하지 않았습니다."
-    exit 1
-  fi
-  if [ ${#scan_targets[@]} -gt 0 ]; then
-    out=$(python3 tools/scan.py "${scan_targets[@]}"); rc=$?
-    if [ $rc -ne 0 ]; then
-      rm -rf "$scan_tmp"
-      if [ $rc -eq 1 ]; then
-        notify "형님, 가재 일기 미전송 커밋이 개인정보 검사에 걸려 푸시하지 않았습니다. 걸린 곳: $(echo "$out" | tr '\n' ' ')"
+# push 직전에 공유 관문을 통과한다: 미전송 커밋 전체의 새 (경로, blob)이
+# 허용 경로이고 개인정보 검사를 통과해야 하고, 원격이 앞서면 진행하지 않는다.
+gate_out=$(python3 tools/push_gate.py); grc=$?
+if [ $grc -eq 0 ]; then
+  if [ "$gate_out" = "READY" ]; then
+    if git push -q origin main; then
+      if [ ${#published[@]} -gt 0 ]; then
+        notify "형님, 가재 일기 ${published[*]}를 발행했습니다. https://starceas.github.io/daily-gajae/posts/${published[${#published[@]}-1]}.html"
       else
-        notify "형님, 가재 일기 미전송 커밋 개인정보 검사가 오류로 끝나 푸시하지 않았습니다."
+        notify "형님, 가재 일기 미전송 커밋을 전송했습니다."
       fi
+    else
+      notify "형님, 가재 일기 푸시가 실패했습니다. 커밋은 로컬에 남아 있습니다."
       exit 1
     fi
   fi
-  rm -rf "$scan_tmp"
-
-  if git push -q origin main; then
-    if [ ${#published[@]} -gt 0 ]; then
-      notify "형님, 가재 일기 ${published[*]}를 발행했습니다. https://starceas.github.io/daily-gajae/posts/${published[${#published[@]}-1]}.html"
-    else
-      notify "형님, 가재 일기 미전송 커밋을 전송했습니다."
-    fi
+  # SYNC(로컬==원격)면 할 일이 없다.
+else
+  if [ $grc -eq 1 ]; then
+    notify "형님, 가재 일기 미전송 커밋이 발행 경계 검사에 걸려 푸시하지 않았습니다. $(echo "$gate_out" | tr '\n' ' ')"
   else
-    notify "형님, 가재 일기 푸시가 실패했습니다. 커밋은 로컬에 남아 있습니다."
-    exit 1
+    notify "형님, 가재 일기 발행 경계 검사 자체가 실패해 푸시하지 않았습니다."
   fi
+  exit 1
 fi
 exit 0

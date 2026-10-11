@@ -57,56 +57,36 @@ fi
 
 # 커밋 경계: 검사를 통과한 course/ 변경분과 index.html만 커밋한다.
 git add -A course index.html
-staged=$(git diff --cached --name-only) || fail 1 "형님, 스테이징 목록을 확인하지 못해 중단했습니다."
-extra=$(printf '%s\n' "$staged" | grep -vE '^(course/.+|index\.html)$' || true)
-[ -n "$extra" ] && fail 1 "형님, 스테이징에 학습 과정 발행과 무관한 파일이 섞여 있어 커밋하지 않았습니다: $(printf '%s' "$extra" | tr '\n' ' ')"
+extra=()
+while IFS= read -r -d '' f; do
+  case "$f" in
+    course/*|index.html) ;;
+    *) extra+=("$f") ;;
+  esac
+done < <(git diff --cached --name-only -z)
+[ ${#extra[@]} -gt 0 ] && fail 1 "형님, 스테이징에 학습 과정 발행과 무관한 파일이 섞여 있어 커밋하지 않았습니다: ${extra[*]}"
 
 git diff --cached --quiet || \
   git commit -q -m "Publish course $(date +%F)" || \
   fail 1 "형님, 학습 과정 커밋이 실패해 발행하지 않았습니다. 스테이징 상태는 그대로입니다."
 
-# 원격으로 나가는 모든 커밋(이전 실행이 남긴 것 포함)의 변경 파일이 허용 경로 안이고 검사를 통과해야 한다.
-if git rev-parse --verify -q origin/main >/dev/null; then
-  base=origin/main
-else
-  base=4b825dc642cb6eb9a060e54bf8d69288fbee4904
-fi
-if ! outgoing=$(git rev-list "$base..HEAD"); then
-  fail 1 "형님, 미전송 커밋을 확인하지 못해 중단했습니다."
-fi
-if [ -z "$outgoing" ]; then
-  # 미전송 커밋이 없다 = 로컬이 원격과 같다. 변경이 없어도 stamp를 갱신할 수 있다.
+# push 직전 공유 관문: 미전송 커밋 전체의 새 (경로, blob)이 허용 경로이고 검사를
+# 통과해야 한다. 로컬==원격일 때만 무변경 성공(stamp 갱신)이다.
+git fetch -q origin || fail 1 "형님, 학습 과정 원격 확인이 실패해 푸시하지 않았습니다."
+gate_out=$(python3 tools/push_gate.py); grc=$?
+if [ $grc -eq 0 ] && [ "$gate_out" = "SYNC" ]; then
   touch "$STAMP"
   exit 0
-fi
-paths=$(git diff --name-only "$base..HEAD") || fail 1 "형님, 미전송 커밋의 변경 파일을 확인하지 못해 중단했습니다."
-bad=$(printf '%s\n' "$paths" | grep -vE '^(course/.+|index\.html|posts/[0-9]{4}-[0-9]{2}-[0-9]{2}\.(md|html))$' || true)
-[ -n "$bad" ] && fail 1 "형님, 미전송 커밋에 발행 경계 밖 파일이 있어 푸시하지 않았습니다: $(printf '%s' "$bad" | tr '\n' ' ')"
-send_list=$(git diff --name-only --diff-filter=d "$base..HEAD") || fail 1 "형님, 미전송 커밋의 변경 파일을 확인하지 못해 중단했습니다."
-send=()
-missing=
-while IFS= read -r f; do
-  [ -z "$f" ] && continue
-  if [ -f "$f" ]; then
-    send+=("$f")
-  else
-    missing="$missing $f"
-  fi
-done <<< "$send_list"
-[ -n "$missing" ] && fail 1 "형님, 미전송 커밋의 파일이 작업 트리에 없어 검사하지 못했습니다:$missing"
-if [ ${#send[@]} -gt 0 ]; then
-  blocked=$(check_scan "${send[@]}")
-  rc=$?
-  if [ "$rc" -eq 1 ]; then
-    fail 1 "형님, 미전송 커밋이 개인정보 검사에 걸려 푸시하지 않았습니다. 걸린 곳: $(printf '%s' "$blocked" | tr '\n' ' ')"
-  elif [ "$rc" -ne 0 ]; then
-    fail 2 "형님, 미전송 커밋의 개인정보 검사 자체가 실패해 푸시하지 않았습니다."
-  fi
+elif [ $grc -eq 1 ]; then
+  fail 1 "형님, 학습 과정 미전송 커밋이 발행 경계 검사에 걸려 푸시하지 않았습니다. $(printf '%s' "$gate_out" | tr '\n' ' ')"
+elif [ $grc -ne 0 ]; then
+  fail 2 "형님, 학습 과정 발행 경계 검사 자체가 실패해 푸시하지 않았습니다."
 fi
 
 if git push -q origin main; then
   touch "$STAMP"
   notify "형님, AI 엔지니어링 학습 과정 새 차수를 발행했습니다. https://starceas.github.io/daily-gajae/course/"
+  exit 0
 else
   fail 1 "형님, 학습 과정 푸시가 실패했습니다. 커밋은 로컬에 남아 있습니다."
 fi
