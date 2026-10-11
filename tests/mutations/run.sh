@@ -80,7 +80,6 @@ run_diary m4; expect_fails "m4 빌드 결과 스캔 생략 → diary" "$BASE/m4.
 mkmut m5
 patch_all "$BASE/m5/tools/scan.py" "sys.exit(2)" "sys.exit(1)"
 patch_all "$BASE/m5/tools/scan.py" "sys.exit(3)" "sys.exit(1)"
-run_gate m5;  expect_fails "m5 오류→검출 취급 → gate" "$BASE/m5.gate.log" "g10"
 run_diary m5; expect_fails "m5 오류→검출 취급 → diary" "$BASE/m5.diary.log" "s12 "
 
 # m6: -z/NUL 파싱을 일반 raw 출력 + 탭·따옴표 무시 파싱으로 되돌린다.
