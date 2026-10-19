@@ -16,8 +16,12 @@
 #   s6 스테이징 잔류물 → 커밋에 안 들어감
 #   s7 미전송 커밋에 금지 파일 → push 거부
 set -u
+# 발행기는 이제 PR 흐름으로 푸시한다(직접 main 푸시 금지). 실제 GitHub을 부르지 않도록
+# gh CLI 대역(tests/diary/gh_stub.py)을 PATH 앞에 꽂아 로컬 bare 원격에서 검증한다.
+#   GH_STUB_CHECKS=pass|fail|none 으로 검사 결과를 시나리오별로 바꿔 실행한다.
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 PUBLISH_SH="${PUBLISH_SH:-$ROOT/tools/publish.sh}"
+GH_STUB_PY="$ROOT/tests/diary/gh_stub.py"
 GITIGNORE_SRC="${GITIGNORE_SRC:-$ROOT/.gitignore}"
 TOOLS_SRC="${TOOLS_SRC:-$ROOT/tools}"
 
@@ -72,11 +76,22 @@ PY
   BR=$(git -C "$WORK" branch --show-current)
   git -C "$WORK" push -q -u origin "$BR"
   git --git-dir="$REMOTE" symbolic-ref HEAD "refs/heads/$BR"
+  mk_gh_stub
+}
+
+# gh 대역을 PATH 앞에 꽂아 실제 GitHub을 부르지 않는다.
+mk_gh_stub() {
+  mkdir -p "$T/bin"
+  printf '#!/bin/sh\nexec python3 %q "$@"\n' "$GH_STUB_PY" > "$T/bin/gh"
+  chmod +x "$T/bin/gh"
+  GH_STATE="$T/gh-state.json"; : > "$GH_STATE"
 }
 
 run_pub() {
-  (cd "$WORK" && env REPO="$WORK" POST="$STUB" CHANNEL=000 \
+  (cd "$WORK" && env PATH="$T/bin:$PATH" REPO="$WORK" POST="$STUB" CHANNEL=000 \
     DIARY_BLOCKLIST="${BLOCKLIST_OVERRIDE:-$BLOCKLIST}" NOTIFY_LOG="$NOTIFY" \
+    GH_STUB_REMOTE="$REMOTE" GH_STUB_STATE="$GH_STATE" \
+    GH_STUB_CHECKS="${CHECKS_OVERRIDE:-pass}" GH_STUB_LOG="$T/gh.log" \
     bash tools/publish.sh >"$T/pub.log" 2>&1)
 }
 
@@ -309,6 +324,48 @@ s13() {
   assert "s13 재실행으로 원격에 발행됨" has_remote posts/2026-10-02.md
 }
 
-s1; s2; s3; s4; s5; s6; s7; s8; s9; s10; s11; s12; s13
+# s14: PR을 만들지 못하면 발행하지 않고 비정상 종료한다(직접 main 푸시로 대신하지 않는다).
+s14() {
+  sandbox
+  mk_draft 2026-10-02 "정상 글"
+  printf '#!/bin/sh\nexit 1\n' > "$T/bin/gh"   # gh 모든 호출 실패
+  chmod +x "$T/bin/gh"
+  local tip
+  tip=$(git --git-dir="$REMOTE" rev-parse "$BR")
+  run_pub
+  assert_not "s14 gh 실패는 비정상 종료" test $? -eq 0
+  assert "s14 알림에 PR 생성 실패 사유" notify_has "PR 생성이 실패"
+  assert "s14 main tip이 변하지 않음" test "$(git --git-dir="$REMOTE" rev-parse "$BR")" = "$tip"
+  assert_not "s14 원격에 발행되지 않음" has_remote posts/2026-10-02.md
+  assert "s14 발행 브랜치도 안 올라감" test -z "$(git --git-dir="$REMOTE" for-each-ref --format='%(refname)' 'refs/heads/publish/*')"
+}
+
+# s15: 검사가 실패하면 머지하지 않고 비정상 종료한다(검사 우회·강제 머지 금지).
+s15() {
+  sandbox
+  mk_draft 2026-10-02 "정상 글"
+  local tip
+  tip=$(git --git-dir="$REMOTE" rev-parse "$BR")
+  CHECKS_OVERRIDE=fail run_pub
+  assert_not "s15 검사 실패는 비정상 종료" test $? -eq 0
+  assert "s15 알림에 검사 실패 사유" notify_has "검사가 실패"
+  assert "s15 main tip이 변하지 않음" test "$(git --git-dir="$REMOTE" rev-parse "$BR")" = "$tip"
+  assert_not "s15 원격에 발행되지 않음" has_remote posts/2026-10-02.md
+  assert "s15 로컬 커밋은 보존됨" sh -c "git -C '$WORK' log --format=%s -1 | grep -q Publish"
+}
+
+# s16: 검사가 아예 붙지 않으면 기다리다 포기하고 머지하지 않는다.
+s16() {
+  sandbox
+  mk_draft 2026-10-02 "정상 글"
+  local tip
+  tip=$(git --git-dir="$REMOTE" rev-parse "$BR")
+  CHECKS_OVERRIDE=none PUBLISH_CHECK_TRIES=2 PUBLISH_CHECK_WAIT=1 run_pub
+  assert_not "s16 검사 미부착은 비정상 종료" test $? -eq 0
+  assert "s16 알림에 검사 미부착 사유" notify_has "검사가 붙지 않아"
+  assert "s16 main tip이 변하지 않음" test "$(git --git-dir="$REMOTE" rev-parse "$BR")" = "$tip"
+}
+
+s1; s2; s3; s4; s5; s6; s7; s8; s9; s10; s11; s12; s13; s14; s15; s16
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

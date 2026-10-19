@@ -46,10 +46,24 @@ PY
   INIT=$(git -C "$WORK" rev-parse HEAD)
   TIP0=$INIT
   [ -f "$WORK/tools/push_gate.py" ] && GATE_MODE=1 || GATE_MODE=0
+
+  # 발행기 PR 흐름: 실제 GitHub 대신 gh 대역으로 로컬 bare 원격에 머지한다.
+  GH_STUB="$ROOT/tests/diary/gh_stub.py"
+  if [ -f "$GH_STUB" ]; then
+    mkdir -p "$T/bin"
+    printf '#!/bin/sh\nexec python3 %q "$@"\n' "$GH_STUB" > "$T/bin/gh"
+    chmod +x "$T/bin/gh"
+    GH_STATE="$T/gh-state.json"; : > "$GH_STATE"
+    HAVE_GH_STUB=1
+  else
+    HAVE_GH_STUB=0
+  fi
 }
 
 gate() { (cd "$WORK" && env DIARY_BLOCKLIST="$BL" python3 tools/push_gate.py >"$T/gate.out" 2>"$T/gate.err"); }
-pub()  { (cd "$WORK" && env REPO="$WORK" POST="$STUB" CHANNEL=0 DIARY_BLOCKLIST="$BL" NOTIFY_LOG="$NOTIFY" bash tools/publish.sh >"$T/pub.log" 2>&1); }
+pub()  { (cd "$WORK" && env PATH="$T/bin:$PATH" REPO="$WORK" POST="$STUB" CHANNEL=0 DIARY_BLOCKLIST="$BL" NOTIFY_LOG="$NOTIFY" \
+           GH_STUB_REMOTE="$REMOTE" GH_STUB_STATE="$GH_STATE" GH_STUB_CHECKS="${CHECKS_OVERRIDE:-pass}" \
+           GH_STUB_LOG="$T/gh.log" bash tools/publish.sh >"$T/pub.log" 2>&1); }
 remote_tip() { git --git-dir="$REMOTE" rev-parse "$BR"; }
 remote_has() { git --git-dir="$REMOTE" ls-tree -r --name-only "$BR" | grep -qxF "$1"; }
 mark_tip() { TIP0=$(remote_tip); }

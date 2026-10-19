@@ -132,6 +132,22 @@ patch1 "$BASE/m8b/tools/publish_course.sh" '  notify "형님, AI 엔지니어링
   exit 0' '  notify "형님, AI 엔지니어링 학습 과정 새 차수를 발행했습니다. https://starceas.github.io/daily-gajae/course/"'
 run_course m8b; expect_fails "m8 알림 상태 누출 → course" "$BASE/m8b.course.log" "⑫"
 
+# m9: PR 검사 결과를 보지 않고 바로 머지한다.
+mkmut m9
+patch1 "$BASE/m9/tools/publish.sh" \
+'if ! gh pr checks "$pr" --watch --interval "${PUBLISH_CHECK_WAIT:-15}" --fail-fast >/dev/null 2>&1; then' \
+'if false; then'
+run_diary m9; expect_fails "m9 검사 결과 무시 → diary" "$BASE/m9.diary.log" "s15 "
+
+# m10: 검사가 붙었는지 확인하지 않고 머지로 넘어간다.
+mkmut m10
+patch1 "$BASE/m10/tools/publish.sh" \
+'if [ "${n:-0}" -le 0 ]; then' \
+'if false; then'
+patch1 "$BASE/m10/tools/publish.sh" '    for _ in $(seq 1 "${PUBLISH_CHECK_TRIES:-20}"); do' '    for _ in 1; do'
+patch1 "$BASE/m10/tools/publish.sh" '      sleep "${PUBLISH_CHECK_WAIT:-15}"' '      :'
+run_diary m10; expect_fails "m10 검사 미부착 무시 → diary" "$BASE/m10.diary.log" "s16 "
+
 echo "== $PASS passed, $FAILED failed =="
 echo "(변이 로그는 트랩으로 정리됨. 재현: 이 스크립트의 mkmut·patch를 참조)"
 [ "$FAILED" -eq 0 ]

@@ -155,18 +155,69 @@ fi
 
 # push 직전에 공유 관문을 통과한다: 미전송 커밋 전체의 새 (경로, blob)이
 # 허용 경로이고 개인정보 검사를 통과해야 하고, 원격이 앞서면 진행하지 않는다.
+#
+# 발행 푸시는 PR 흐름으로만 한다. main에는 규칙셋(필수 검사 unittest)이 걸려
+# 있어 직접 푸시가 거부되므로, 발행 커밋을 publish/<날짜> 브랜치로 올리고
+# PR을 만들어 검사가 통과한 뒤 머지한다. 직접 main 푸시는 하지 않는다.
 gate_out=$(python3 tools/push_gate.py); grc=$?
 if [ $grc -eq 0 ]; then
   if [ "$gate_out" = "READY" ]; then
-    if git push -q --no-follow-tags origin refs/heads/main:refs/heads/main; then
-      if [ ${#published[@]} -gt 0 ]; then
-        notify "형님, 가재 일기 ${published[*]}를 발행했습니다. https://starceas.github.io/daily-gajae/posts/${published[${#published[@]}-1]}.html"
-      else
-        notify "형님, 가재 일기 미전송 커밋을 전송했습니다."
-      fi
-    else
+    if ! command -v gh >/dev/null 2>&1; then
+      notify "형님, 가재 일기 PR 도구(gh)가 없어 발행하지 않았습니다. 커밋은 로컬에 남아 있습니다."
+      exit 1
+    fi
+    branch="publish/$(date +%F)-$(git rev-parse --short HEAD)"
+    if ! git push -q --no-follow-tags origin "refs/heads/main:refs/heads/${branch}"; then
       notify "형님, 가재 일기 푸시가 실패했습니다. 커밋은 로컬에 남아 있습니다."
       exit 1
+    fi
+    pr=$(gh pr list --head "$branch" --base main --state open --json number --jq '.[0].number // empty' 2>/dev/null)
+    if [ -z "$pr" ]; then
+      gh pr create --base main --head "$branch" --title "Publish $(date +%F)" \
+        --body "가재 일기 자동 발행" >/dev/null 2>&1
+      pr=$(gh pr list --head "$branch" --base main --state open --json number --jq '.[0].number // empty' 2>/dev/null)
+    fi
+    if [ -z "$pr" ]; then
+      # PR을 못 만들었으면 올려둔 발행 브랜치도 남기지 않는다(미전송 커밋은 로컬에 그대로).
+      git push -q --no-follow-tags origin --delete "$branch" >/dev/null 2>&1 || true
+      notify "형님, 가재 일기 PR 생성이 실패해 발행하지 않았습니다. 커밋은 로컬에 남아 있습니다."
+      exit 1
+    fi
+    # 검사가 붙지 않은 채로 머지하지 않는다(규칙셋 우회 금지).
+    n=0
+    for _ in $(seq 1 "${PUBLISH_CHECK_TRIES:-20}"); do
+      n=$(gh pr checks "$pr" --json name --jq 'length' 2>/dev/null || echo 0)
+      [ "${n:-0}" -gt 0 ] && break
+      sleep "${PUBLISH_CHECK_WAIT:-15}"
+    done
+    if [ "${n:-0}" -le 0 ]; then
+      notify "형님, 가재 일기 PR #${pr}에 검사가 붙지 않아 머지하지 않았습니다."
+      exit 1
+    fi
+    if ! gh pr checks "$pr" --watch --interval "${PUBLISH_CHECK_WAIT:-15}" --fail-fast >/dev/null 2>&1; then
+      notify "형님, 가재 일기 PR #${pr} 검사가 실패해 머지하지 않았습니다. $(gh pr checks "$pr" 2>&1 | tail -5 | tr '\n' ' ')"
+      exit 1
+    fi
+    head_sha=$(git rev-parse HEAD)
+    if ! gh pr merge "$pr" --merge --delete-branch --match-head-commit "$head_sha" >/dev/null 2>&1; then
+      notify "형님, 가재 일기 PR #${pr} 머지가 실패해 발행하지 않았습니다."
+      exit 1
+    fi
+    if ! git fetch -q origin; then
+      notify "형님, 가재 일기 PR #${pr}는 머지됐지만 로컬 main 동기화가 실패했습니다."
+      exit 1
+    fi
+    if ! git merge -q --ff-only origin/main >/dev/null 2>&1; then
+      # 원격이 앞서 ff가 불가능한 경우만: 머지된 원격 기준으로 맞춘다(작업 트리는 깨끗함).
+      git reset -q --hard origin/main || {
+        notify "형님, 가재 일기 PR #${pr}는 머지됐지만 로컬 main 동기화가 실패했습니다."
+        exit 1
+      }
+    fi
+    if [ ${#published[@]} -gt 0 ]; then
+      notify "형님, 가재 일기 ${published[*]}를 발행했습니다. https://starceas.github.io/daily-gajae/posts/${published[${#published[@]}-1]}.html"
+    else
+      notify "형님, 가재 일기 미전송 커밋을 전송했습니다."
     fi
   fi
   # SYNC(로컬==원격)면 할 일이 없다.
